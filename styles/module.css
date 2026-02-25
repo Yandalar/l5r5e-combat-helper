@@ -1,0 +1,102 @@
+.chat-message .l5r5e-auto-damage {
+  padding: 12px;
+  border: 2px solid #8b4513 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(139, 69, 19, 0.1) 0%,
+    rgba(210, 105, 30, 0.1) 100%
+  ) !important;
+  border-radius: 8px;
+  margin: 8px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: inherit;
+}
+
+.chat-message .l5r5e-auto-damage.armor-blocked {
+  border-color: #4682b4 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(70, 130, 180, 0.1) 0%,
+    rgba(100, 149, 237, 0.1) 100%
+  ) !important;
+}
+
+.chat-message .l5r5e-auto-damage.critical-strike {
+  border-color: #8b0000 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(139, 0, 0, 0.15) 0%,
+    rgba(178, 34, 34, 0.15) 100%
+  ) !important;
+  animation: pulse-critical 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+  0%,
+  100% {
+    box-shadow: 0 2px 4px rgba(139, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(139, 0, 0, 0.6);
+  }
+}
+
+.chat-message .l5r5e-auto-damage h3 {
+  margin: 0 0 10px 0 !important;
+  color: #8b4513 !important;
+  border-bottom: 2px solid #8b4513 !important;
+  padding-bottom: 8px;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  text-align: left;
+}
+
+.chat-message .l5r5e-auto-damage.armor-blocked h3 {
+  color: #4682b4 !important;
+  border-bottom-color: #4682b4 !important;
+}
+
+.chat-message .l5r5e-auto-damage.critical-strike h3 {
+  color: #8b0000 !important;
+  border-bottom-color: #8b0000 !important;
+  font-size: 18px !important;
+}
+
+.chat-message .l5r5e-auto-damage p {
+  margin: 6px 0 !important;
+  line-height: 1.4;
+  text-align: left;
+  color: inherit;
+}
+
+.chat-message .l5r5e-auto-damage strong {
+  color: #d2691e !important;
+  font-weight: bold !important;
+}
+
+.chat-message .l5r5e-auto-damage.critical-strike strong {
+  color: #8b0000 !important;
+}
+
+.chat-message .l5r5e-auto-damage em {
+  color: #666 !important;
+  font-style: italic !important;
+}
+
+.chat-message .l5r5e-auto-damage .incapacitated-warning {
+  background: rgba(255, 165, 0, 0.2) !important;
+  border-left: 4px solid #ff8c00;
+  padding: 8px;
+  margin: 10px 0;
+  font-weight: bold !important;
+  color: #ff8c00 !important;
+}
+
+.chat-message .l5r5e-auto-damage .critical-warning {
+  background: rgba(139, 0, 0, 0.15) !important;
+  border-left: 4px solid #8b0000;
+  padding: 8px;
+  margin: 10px 0;
+  font-weight: bold !important;
+  color: #8b0000 !important;
+}
