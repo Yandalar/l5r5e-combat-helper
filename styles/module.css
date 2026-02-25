@@ -1,4 +1,4 @@
-.chat-message .l5r5e-auto-damage {
+.chat-message .l5r5e-combat-helper {
   padding: 12px;
   border: 2px solid #8b4513 !important;
   background: linear-gradient(
@@ -12,7 +12,7 @@
   font-family: inherit;
 }
 
-.chat-message .l5r5e-auto-damage.armor-blocked {
+.chat-message .l5r5e-combat-helper.armor-blocked {
   border-color: #4682b4 !important;
   background: linear-gradient(
     135deg,
@@ -21,7 +21,7 @@
   ) !important;
 }
 
-.chat-message .l5r5e-auto-damage.critical-strike {
+.chat-message .l5r5e-combat-helper.critical-strike {
   border-color: #8b0000 !important;
   background: linear-gradient(
     135deg,
@@ -41,7 +41,7 @@
   }
 }
 
-.chat-message .l5r5e-auto-damage h3 {
+.chat-message .l5r5e-combat-helper h3 {
   margin: 0 0 10px 0 !important;
   color: #8b4513 !important;
   border-bottom: 2px solid #8b4513 !important;
@@ -51,39 +51,39 @@
   text-align: left;
 }
 
-.chat-message .l5r5e-auto-damage.armor-blocked h3 {
+.chat-message .l5r5e-combat-helper.armor-blocked h3 {
   color: #4682b4 !important;
   border-bottom-color: #4682b4 !important;
 }
 
-.chat-message .l5r5e-auto-damage.critical-strike h3 {
+.chat-message .l5r5e-combat-helper.critical-strike h3 {
   color: #8b0000 !important;
   border-bottom-color: #8b0000 !important;
   font-size: 18px !important;
 }
 
-.chat-message .l5r5e-auto-damage p {
+.chat-message .l5r5e-combat-helper p {
   margin: 6px 0 !important;
   line-height: 1.4;
   text-align: left;
   color: inherit;
 }
 
-.chat-message .l5r5e-auto-damage strong {
+.chat-message .l5r5e-combat-helper strong {
   color: #d2691e !important;
   font-weight: bold !important;
 }
 
-.chat-message .l5r5e-auto-damage.critical-strike strong {
+.chat-message .l5r5e-combat-helper.critical-strike strong {
   color: #8b0000 !important;
 }
 
-.chat-message .l5r5e-auto-damage em {
+.chat-message .l5r5e-combat-helper em {
   color: #666 !important;
   font-style: italic !important;
 }
 
-.chat-message .l5r5e-auto-damage .incapacitated-warning {
+.chat-message .l5r5e-combat-helper .incapacitated-warning {
   background: rgba(255, 165, 0, 0.2) !important;
   border-left: 4px solid #ff8c00;
   padding: 8px;
@@ -92,7 +92,7 @@
   color: #ff8c00 !important;
 }
 
-.chat-message .l5r5e-auto-damage .critical-warning {
+.chat-message .l5r5e-combat-helper .critical-warning {
   background: rgba(139, 0, 0, 0.15) !important;
   border-left: 4px solid #8b0000;
   padding: 8px;
