@@ -26,6 +26,9 @@
     "styles/module.css"
   ],
   "url": "https://github.com/Yandalar/l5r5e-combat-helper",
+  "manifest": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/module.json",
+  "readme": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/README.md",
+  "bugs": "https://github.com/Yandalar/l5r5e-combat-helper/issues",
   "license": "LICENSE",
   "licenses": [
     {
