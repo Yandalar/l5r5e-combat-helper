@@ -27,6 +27,7 @@
   ],
   "url": "https://github.com/Yandalar/l5r5e-combat-helper",
   "manifest": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/module.json",
+  "download": "https://github.com/Yandalar/l5r5e-combat-helper/releases/download/v0.5.0/l5r5e-combat-helper-v0.5.0.zip",
   "readme": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/README.md",
   "bugs": "https://github.com/Yandalar/l5r5e-combat-helper/issues",
   "license": "LICENSE",
