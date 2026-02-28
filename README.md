@@ -15,7 +15,6 @@ An automation module for Foundry VTT that streamlines combat damage application 
 - **Smart Weapon Detection**: Automatically finds equipped/readied weapons and uses their damage values
 - **Bonus Success Calculation**: Adds additional successes beyond TN as bonus damage
 - **Rich Chat Messages**: Beautiful, informative chat cards showing damage calculations
-- **Debug Mode**: Comprehensive logging for troubleshooting and development
 
 ## Installation
 
@@ -176,6 +175,7 @@ The module expects actors to have:
 
 ### Planned Features
 
+- [ ] Asking the target User if the characters wants to defend the attack or not
 - [ ] Support for supernatural damage and armor
 - [ ] Critical strike table integration
 - [ ] Technique damage modifications
