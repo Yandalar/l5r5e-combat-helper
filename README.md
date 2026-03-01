@@ -60,7 +60,6 @@ An automation module for Foundry VTT that streamlines combat damage application 
    - Calculates damage (weapon base + bonus successes)
    - Subtracts armor resistance
    - Applies damage to target's fatigue
-   - Applies Incapacitated if fatigue > endurance
    - Detects Critical Strikes on already incapacitated targets
 
 ### Configuration
