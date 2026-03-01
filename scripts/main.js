@@ -280,28 +280,6 @@ function getCurrentFatigue(target) {
 }
 
 /**
- * Applies the Incapacitated condition to the target.
- *
- * Attempts to toggle the built-in status effect and notifies
- * the user. If automatic application fails, warns the user
- * to apply the condition manually.
- */
-async function applyIncapacitated(target) {
-  try {
-    if (target.toggleStatusEffect) {
-      await target.toggleStatusEffect("incapacitated", { active: true });
-    }
-
-    ui.notifications.warn(`${target.name} is now Incapacitated!`);
-  } catch (error) {
-    console.error("L5R5e Combat Helper | Error applying incapacitated:", error);
-    ui.notifications.warn(
-      `${target.name} should be Incapacitated (apply manually)`,
-    );
-  }
-}
-
-/**
  * Handles a critical strike scenario.
  *
  * Triggered when an attack hits a target that is already
@@ -323,8 +301,6 @@ async function handleCriticalStrike(target, attacker) {
     content: content,
     speaker: ChatMessage.getSpeaker({ actor: attacker }),
   });
-
-  ui.notifications.error(`CRITICAL STRIKE on ${target.name}!`);
 }
 
 /**
@@ -362,7 +338,6 @@ async function applyDamage(
       speaker: ChatMessage.getSpeaker({ actor: attacker }),
     });
 
-    ui.notifications.info(`${target.name}'s armor blocked all damage!`);
     return;
   }
 
@@ -398,7 +373,6 @@ async function applyDamage(
 
     let incapacitatedMessage = "";
     if (newFatigue > endurance && currentFatigue <= endurance) {
-      await applyIncapacitated(target);
       incapacitatedMessage =
         '<p class="incapacitated-warning">⚠️ <strong>INCAPACITATED!</strong></p>';
     }
@@ -422,8 +396,6 @@ async function applyDamage(
       content: content,
       speaker: ChatMessage.getSpeaker({ actor: attacker }),
     });
-
-    ui.notifications.info(`${damage} damage applied to ${target.name}`);
   } catch (error) {
     console.error("L5R5e Combat Helper | Error applying damage:", error);
     ui.notifications.error("Error applying damage: " + error.message);
