@@ -31,6 +31,15 @@
   animation: pulse-critical 1.5s ease-in-out infinite;
 }
 
+.chat-message .l5r5e-combat-helper.critical-strike.void-choice {
+  border-color: #4b0082 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(75, 0, 130, 0.15) 0%,
+    rgba(138, 43, 226, 0.15) 100%
+  ) !important;
+}
+
 @keyframes pulse-critical {
   0%,
   100% {
@@ -60,6 +69,11 @@
   color: #8b0000 !important;
   border-bottom-color: #8b0000 !important;
   font-size: 18px !important;
+}
+
+.chat-message .l5r5e-combat-helper.critical-strike.void-choice h3 {
+  color: #4b0082 !important;
+  border-bottom-color: #4b0082 !important;
 }
 
 .chat-message .l5r5e-combat-helper p {
@@ -99,4 +113,22 @@
   margin: 10px 0;
   font-weight: bold !important;
   color: #8b0000 !important;
+}
+
+.chat-message .l5r5e-combat-helper .void-hint {
+  background: rgba(75, 0, 130, 0.1) !important;
+  border-left: 4px solid #4b0082;
+  padding: 6px;
+  margin: 10px 0;
+  font-size: 12px !important;
+  color: #4b0082 !important;
+}
+
+.chat-message .l5r5e-combat-helper .void-info {
+  background: rgba(75, 0, 130, 0.15) !important;
+  border-left: 4px solid #4b0082;
+  padding: 8px;
+  margin: 10px 0;
+  font-weight: bold !important;
+  color: #4b0082 !important;
 }
