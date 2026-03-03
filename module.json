@@ -20,6 +20,11 @@
     "l5r5e"
   ],
   "esmodules": [
+    "scripts/actor-utils.js",
+    "scripts/damage-calculator.js",
+    "scripts/chat-messages.js",
+    "scripts/void-defense.js",
+    "scripts/combat-handler.js",
     "scripts/main.js"
   ],
   "styles": [
