@@ -10,11 +10,13 @@ An automation module for Foundry VTT that streamlines combat damage application 
 
 - **Automatic Damage Application**: Calculates and applies fatigue damage automatically when attacks succeed
 - **Armor Reduction**: Automatically subtracts equipped armor's physical resistance from damage
-- **Incapacitated Detection**: Applies Incapacitated condition when fatigue reaches or exceeds endurance
-- **Critical Strike Detection**: Identifies and announces critical strikes on already incapacitated targets
+- **Void Reaction – Don't Defend**: Targets may spend a Void Point to willingly suffer a Critical Strike instead of defending
+- **Critical Strike Mitigation**: Characters can roll Fitness to reduce the severity of incoming critical strikes
+- **Automatic Critical Resolution**: Critical strike severity is calculated automatically based on weapon deadliness and mitigation
+- **Incapacitated Detection**: Detects when a character becomes incapacitated
 - **Smart Weapon Detection**: Automatically finds equipped/readied weapons and uses their damage values
 - **Bonus Success Calculation**: Adds additional successes beyond TN as bonus damage
-- **Rich Chat Messages**: Beautiful, informative chat cards showing damage calculations
+- **Rich Chat Messages**: Informative chat cards showing attack, damage, and critical calculations
 
 ## Installation
 
@@ -81,6 +83,14 @@ Bonus Successes = Total Successes - TN
 Final Damage = Max(0, Raw Damage - Armor Physical Resistance)
 ```
 
+### Armor Blocking
+
+If armor completely negates damage (resistance ≥ raw damage):
+
+- No fatigue is applied
+- A special "Damage Blocked" message appears
+- Shows the calculation in chat
+
 ### Incapacitated Condition
 
 When a character's fatigue exceeds their endurance:
@@ -96,19 +106,43 @@ If an attack targets a character who is:
 - Already Incapacitated, OR
 - Has fatigue > endurance
 
-The module will:
+When a character suffers a Critical Strike, the module will:
 
-- Display a special Critical Strike message
-- Alert the GM to roll for critical consequences
-- NOT apply additional fatigue damage
+- Determine the **weapon deadliness**
+- Prompt a **Fitness mitigation roll**
+- Calculate the **final severity**
+- Automatically apply the **critical effect**
+- Display the full calculation in chat
 
-### Armor Blocking
+### Void Reaction – Don't Defend
 
-If armor completely negates damage (resistance ≥ raw damage):
+Targets may choose to **spend 1 Void Point** to willingly accept a **Critical Strike** instead of defending an attack.
 
-- No fatigue is applied
-- A special "Damage Blocked" message appears
-- Shows the calculation in chat
+To use this reaction:
+
+1. Right-click the successful attack message in chat
+2. Select **"Spend Void – Don't Defend"**
+3. Confirm the action
+
+If confirmed:
+
+- The target spends **1 Void Point**
+- Any fatigue damage from the attack is **reverted**
+- A **Critical Strike** is triggered instead
+
+### Critical Strike Mitigation
+
+When a character suffers a Critical Strike, they may roll **Fitness (TN 1)** to reduce its severity.
+
+Mitigation rules:
+
+The module automatically:
+
+- Detects the completed **Fitness roll**
+- Calculates the **severity reduction**
+- Determines the **final critical severity**
+- Applies the corresponding **critical effect**
+- Displays a **summary message in chat**
 
 ## Chat Message Examples
 
@@ -174,9 +208,7 @@ The module expects actors to have:
 
 ### Planned Features
 
-- [ ] Asking the target User if the characters wants to defend the attack or not
 - [ ] Support for supernatural damage and armor
-- [ ] Critical strike table integration
 - [ ] Technique damage modifications
 - [ ] Multi-language support
 
