@@ -47,6 +47,8 @@ import {
  * 7. Calculate raw damage and armor mitigation.
  * 8. Store attack metadata for later interactions (Void choice).
  * 9. Apply damage.
+ *
+ * @returns {void}
  */
 export function registerCombatHandler() {
   Hooks.on("createChatMessage", async (message) => {
@@ -59,7 +61,9 @@ export function registerCombatHandler() {
       if (!roll.l5r5e) return;
 
       const l5rData = roll.l5r5e;
-      const isAttack = l5rData.skillCatId === "martial";
+      const attackSkills = ["melee", "ranged", "unarmed"];
+      const isAttack =
+        attackSkills.includes(l5rData.skillId) && l5rData.rnkEnded === true;
       const isFinished = l5rData.rnkEnded === true;
 
       if (!isAttack || !isFinished) return;
@@ -90,7 +94,8 @@ export function registerCombatHandler() {
       const wasCritical = isAtCriticalState(target);
 
       if (wasCritical) {
-        await createCriticalStrikeMessage(target, attacker);
+        const weapon = getEquippedWeapon(attacker);
+        await createCriticalStrikeMessage(target, attacker, weapon);
         return;
       }
 
@@ -128,6 +133,25 @@ export function registerCombatHandler() {
 }
 
 /**
+ * Gets the first equipped or readied weapon from an actor.
+ * Used to determine weapon deadliness for critical strikes.
+ *
+ * @param {Actor} actor
+ * @returns {Item|null}
+ */
+function getEquippedWeapon(actor) {
+  if (!actor || !actor.items) return null;
+
+  const weapons = actor.items.filter(
+    (item) =>
+      item.type === "weapon" &&
+      (item.system?.equipped === true || item.system?.readied === true),
+  );
+
+  return weapons.length > 0 ? weapons[0] : null;
+}
+
+/**
  * Applies fatigue damage to the target actor.
  *
  * Behavior:
@@ -139,6 +163,14 @@ export function registerCombatHandler() {
  *
  * This function is intentionally schema-tolerant and does not assume
  * a single fatigue data structure.
+ *
+ * @param {Actor} target - Actor receiving the damage
+ * @param {number} damage - Final damage after armor reduction
+ * @param {Actor} attacker - Actor dealing the damage
+ * @param {number} rawDamage - Original damage before armor
+ * @param {number} armorResistance - Armor value applied to reduce damage
+ * @param {object} attackData - Metadata describing the attack event
+ * @returns {Promise<void>}
  */
 async function applyDamage(
   target,

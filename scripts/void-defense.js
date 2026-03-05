@@ -1,16 +1,17 @@
 /**
- * Void "Don't Defend" reaction system.
+ * Void "Don't Defend" Reaction System
  *
- * Adds a contextual chat menu option that allows a target to spend
- * a Void Point to willingly suffer a Critical Strike instead of
- * defending against an incoming attack.
+ * Provides a combat reaction allowing a target to voluntarily spend
+ * a Void Point to accept a Critical Strike instead of defending
+ * against an incoming attack.
  *
- * This system:
- * - Reads attack metadata stored on chat messages
- * - Validates eligibility conditions
- * - Reverts previously applied fatigue damage
- * - Consumes a Void Point
- * - Triggers a Critical Strike notification
+ * Core responsibilities:
+ * - Inject a contextual option into chat attack messages
+ * - Validate whether the reaction can be used
+ * - Spend a Void Point from the target actor
+ * - Revert fatigue damage already applied
+ * - Mark the attack as resolved
+ * - Generate a Critical Strike notification
  */
 
 import {
@@ -22,11 +23,11 @@ import {
 import { createVoidCriticalStrikeMessage } from "./chat-messages.js";
 
 /**
- * Registers the chat context menu hook responsible for injecting
- * the Void reaction option into eligible combat messages.
+ * Registers the hook responsible for extending the chat message
+ * context menu with the Void reaction option.
  *
- * Uses the Foundry VTT context menu extension system to dynamically
- * append an option to chat entries that contain valid attack metadata.
+ * This hook runs whenever Foundry builds the contextual menu
+ * for chat messages.
  */
 export function registerVoidDefenseHook() {
   Hooks.on("getChatMessageContextOptions", addVoidOption);
@@ -34,21 +35,22 @@ export function registerVoidDefenseHook() {
 
 /**
  * Injects the "Spend Void - Don't Defend" option into the chat
- * message context menu when appropriate.
+ * message context menu when the message represents a valid attack.
  *
  * The option will only appear if:
- * - The feature is enabled in world settings
- * - The message contains unresolved attack metadata
+ * - The feature is enabled in module settings
+ * - The chat message contains attack metadata
+ * - The attack has not already been resolved
  * - The current user owns the target actor (or is GM)
- * - The target has available Void Points
- * - The target is not already incapacitated
+ * - The target has at least one Void Point available
+ * - The target is not incapacitated
  *
- * This function is intentionally defensive, performing multiple
- * validation checks to prevent invalid state manipulation.
+ * @param {HTMLElement|jQuery} html - Chat message HTML container
+ * @param {Array} options - Context menu options array provided by Foundry
  */
-function addVoidOption(options) {
-  // Safe check for setting
+function addVoidOption(html, options) {
   let voidChoiceEnabled = true;
+
   try {
     voidChoiceEnabled = game.settings?.get(
       "l5r5e-combat-helper",
@@ -56,19 +58,37 @@ function addVoidOption(options) {
     );
   } catch (e) {}
 
-  if (!voidChoiceEnabled) {
+  if (!voidChoiceEnabled) return;
+
+  // Normalize options array for compatibility between Foundry versions
+  const optionsArray = Array.isArray(options)
+    ? options
+    : Array.isArray(html)
+      ? html
+      : null;
+
+  if (!optionsArray) {
+    console.warn(
+      "l5r5e-combat-helper | Could not resolve context menu options array.",
+    );
     return;
   }
 
-  options.push({
+  optionsArray.push({
     name: "Spend Void - Don't Defend",
     icon: '<i class="fas fa-yin-yang"></i>',
+
+    /**
+     * Determines whether the option should be visible for the
+     * current chat message entry.
+     *
+     * @param {HTMLElement|jQuery} li - Chat message list element
+     * @returns {boolean} True if the option should be displayed
+     */
     condition: (li) => {
       let messageId;
 
-      // Extract messageId in a version-tolerant way.
-      // Depending on Foundry version or rendering context,
-      // `li` may be a native HTMLElement or a jQuery wrapper.
+      // Extract messageId in a version-tolerant way
       if (li instanceof HTMLElement) {
         messageId = li.dataset.messageId || li.getAttribute("data-message-id");
       } else if (li.jquery || li instanceof jQuery) {
@@ -78,49 +98,34 @@ function addVoidOption(options) {
           li.dataset?.messageId || li.getAttribute?.("data-message-id");
       }
 
-      if (!messageId) {
-        return false;
-      }
+      if (!messageId) return false;
 
       const message = game.messages.get(messageId);
-      if (!message) {
-        return false;
-      }
+      if (!message) return false;
 
       const attackData = message.getFlag("l5r5e-combat-helper", "attackData");
-
-      if (!attackData || attackData.resolved) {
-        return false;
-      }
+      if (!attackData || attackData.resolved) return false;
 
       const target = game.actors.get(attackData.targetId);
-      if (!target) {
-        return false;
-      }
+      if (!target) return false;
 
-      if (!(target.isOwner || game.user.isGM)) {
-        return false;
-      }
+      if (!(target.isOwner || game.user.isGM)) return false;
 
       const voidPoints = getVoidPoints(target);
+      if (voidPoints <= 0) return false;
 
-      if (voidPoints <= 0) {
-        return false;
-      }
-
-      if (isIncapacitated(target)) {
-        return false;
-      }
+      if (isIncapacitated(target)) return false;
 
       return true;
     },
+
     /**
      * Executes when the user selects the Void reaction option.
      *
-     * Workflow:
-     * 1. Resolve message and associated attack metadata.
-     * 2. Confirm user intent via dialog.
-     * 3. If confirmed, delegate to `handleVoidNoDefense`.
+     * Displays a confirmation dialog and, if accepted,
+     * resolves the reaction by delegating to `handleVoidNoDefense`.
+     *
+     * @param {HTMLElement|jQuery} li - Chat message list element
      */
     callback: async (li) => {
       let messageId;
@@ -139,6 +144,7 @@ function addVoidOption(options) {
 
       const target = game.actors.get(attackData.targetId);
       const attacker = game.actors.get(attackData.attackerId);
+
       const voidBefore = getVoidPoints(target);
 
       const confirmed = await Dialog.confirm({
@@ -153,9 +159,7 @@ function addVoidOption(options) {
         defaultYes: false,
       });
 
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
 
       await handleVoidNoDefense(
         target,
@@ -169,17 +173,19 @@ function addVoidOption(options) {
 }
 
 /**
- * Resolves the Void "Don't Defend" reaction.
+ * Executes the Void "Don't Defend" reaction.
  *
- * Effects:
- * - Spends one Void Point from the target.
- * - Reverts previously applied fatigue damage (if any).
- * - Marks the attack metadata as resolved to prevent reuse.
- * - Generates a Critical Strike chat notification.
+ * This process:
+ * 1. Spends one Void Point from the target actor
+ * 2. Reverts fatigue damage already applied by the attack
+ * 3. Marks the attack metadata as resolved
+ * 4. Generates a chat notification for the resulting Critical Strike
  *
- * This function ensures state consistency by:
- * - Preventing double resolution
- * - Updating actor and message documents atomically
+ * @param {Actor} target - Actor receiving the attack
+ * @param {Actor} attacker - Actor who performed the attack
+ * @param {Object} attackData - Stored metadata about the attack
+ * @param {ChatMessage} message - Chat message containing the attack
+ * @param {number} voidBefore - Void Points before spending
  */
 async function handleVoidNoDefense(
   target,
@@ -201,15 +207,40 @@ async function handleVoidNoDefense(
     });
 
     const voidAfter = getVoidPoints(target);
+
+    const weapon = getEquippedWeapon(attacker);
+
     await createVoidCriticalStrikeMessage(
       target,
       attacker,
       voidBefore,
       voidAfter,
+      weapon,
     );
   } catch (error) {
     console.error("❌ Error:", error);
     console.error("Stack:", error.stack);
     ui.notifications.error("Error: " + error.message);
   }
+}
+
+/**
+ * Retrieves the first equipped or readied weapon from an actor.
+ *
+ * Used to determine the weapon deadliness value when generating
+ * the Critical Strike that replaces the defended attack.
+ *
+ * @param {Actor} actor - Actor whose inventory will be inspected
+ * @returns {Item|null} Equipped weapon item or null if none found
+ */
+function getEquippedWeapon(actor) {
+  if (!actor || !actor.items) return null;
+
+  const weapons = actor.items.filter(
+    (item) =>
+      item.type === "weapon" &&
+      (item.system?.equipped === true || item.system?.readied === true),
+  );
+
+  return weapons.length > 0 ? weapons[0] : null;
 }

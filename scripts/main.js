@@ -13,6 +13,8 @@
 
 import { registerCombatHandler } from "./combat-handler.js";
 import { registerVoidDefenseHook } from "./void-defense.js";
+import { registerCriticalStrikeRollHandler } from "./critical-strike-roll.js";
+import { registerCriticalMitigationHandler } from "./critical-mitigation.js";
 
 Hooks.once("init", () => {
   /**
@@ -51,6 +53,9 @@ Hooks.once("init", () => {
 // as soon as the chat log UI becomes interactive.
 registerVoidDefenseHook();
 
+// Register critical strike roll button handler
+registerCriticalStrikeRollHandler();
+
 Hooks.once("ready", () => {
   /**
    * Register combat processing after all game documents,
@@ -60,4 +65,10 @@ Hooks.once("ready", () => {
    * actor resolution, which are guaranteed at the `ready` stage.
    */
   registerCombatHandler();
+
+  /**
+   * Register critical mitigation handler to process Fitness rolls
+   * for critical strike mitigation.
+   */
+  registerCriticalMitigationHandler();
 });
