@@ -55,15 +55,25 @@ async function handleCriticalStrikeRollClick(message, button) {
     );
 
     if (!criticalData) {
-      ui.notifications.error("Critical strike data not found in message");
+      ui.notifications.error(
+        game.i18n.localize(
+          "l5r5e-combat-helper.notifications.criticalDataNotFound",
+        ),
+      );
       return;
     }
 
     // Check if already resolved
     if (criticalData.resolved) {
-      ui.notifications.info("This critical strike has already been resolved");
+      ui.notifications.info(
+        game.i18n.localize(
+          "l5r5e-combat-helper.notifications.criticalAlreadyResolved",
+        ),
+      );
       button.disabled = true;
-      button.textContent = "✓ Critical Resolved";
+      button.textContent = game.i18n.localize(
+        "l5r5e-combat-helper.chat.criticalStrike.resolvedButton",
+      );
       return;
     }
 
@@ -72,39 +82,52 @@ async function handleCriticalStrikeRollClick(message, button) {
     // Get the target actor
     const target = game.actors.get(targetId);
     if (!target) {
-      ui.notifications.error("Target actor not found");
+      ui.notifications.error(
+        game.i18n.localize("l5r5e-combat-helper.notifications.targetNotFound"),
+      );
       return;
     }
 
     // Verify permission: user must own the target or be GM
     if (!target.isOwner && !game.user.isGM) {
       ui.notifications.warn(
-        "You do not have permission to roll for this actor",
+        game.i18n.localize("l5r5e-combat-helper.notifications.noPermission"),
       );
       return;
     }
 
     // Disable the button to prevent multiple clicks
     button.disabled = true;
-    button.textContent = "Rolling...";
+    button.textContent = game.i18n.localize(
+      "l5r5e-combat-helper.chat.criticalStrike.rollingButton",
+    );
 
     await launchFitnessCheck(target, weaponDeadliness, message.id);
 
     // Update button text but keep it disabled
     // It will only be re-enabled if there's an error, or permanently disabled when resolved
-    button.textContent = "⏳ Waiting for roll...";
+    button.textContent = game.i18n.localize(
+      "l5r5e-combat-helper.chat.criticalStrike.waitingButton",
+    );
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error handling critical strike roll:",
       error,
     );
     ui.notifications.error(
-      "Error rolling for critical strike: " + error.message,
+      game.i18n.format(
+        "l5r5e-combat-helper.notifications.errorRollingCritical",
+        {
+          error: error.message,
+        },
+      ),
     );
 
     // Re-enable button on error
     button.disabled = false;
-    button.textContent = "⚠️ Roll for Critical Strike consequences!";
+    button.textContent = game.i18n.localize(
+      "l5r5e-combat-helper.chat.criticalStrike.rollButton",
+    );
   }
 }
 
@@ -126,7 +149,9 @@ async function launchFitnessCheck(target, weaponDeadliness, messageId) {
 
   if (fitnessSkill === null || fitnessSkill === undefined) {
     ui.notifications.warn(
-      `${target.name} does not have the Fitness skill available. Please make a manual roll.`,
+      game.i18n.format("l5r5e-combat-helper.notifications.noFitnessSkill", {
+        name: target.name,
+      }),
     );
     return;
   }
@@ -151,7 +176,11 @@ async function launchFitnessCheck(target, weaponDeadliness, messageId) {
       "L5R5e Combat Helper | Error launching Fitness check:",
       error,
     );
-    ui.notifications.error("Error launching roll: " + error.message);
+    ui.notifications.error(
+      game.i18n.format("l5r5e-combat-helper.notifications.errorLaunchingRoll", {
+        error: error.message,
+      }),
+    );
   }
 }
 

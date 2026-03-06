@@ -50,7 +50,11 @@ export async function applyCriticalEffect(
       "L5R5e Combat Helper | Could not find critical effect for severity:",
       finalSeverity,
     );
-    ui.notifications.error("Error applying critical effect");
+    ui.notifications.error(
+      game.i18n.localize(
+        "l5r5e-combat-helper.notifications.criticalEffectNotFound",
+      ),
+    );
     return;
   }
 
@@ -95,7 +99,14 @@ export async function applyCriticalEffect(
       "L5R5e Combat Helper | Error applying critical effect:",
       error,
     );
-    ui.notifications.error("Error applying critical effect: " + error.message);
+    ui.notifications.error(
+      game.i18n.format(
+        "l5r5e-combat-helper.notifications.errorApplyingDamage",
+        {
+          error: error.message,
+        },
+      ),
+    );
   }
 }
 
@@ -117,7 +128,9 @@ async function applyArmorDamage(target) {
 
   if (!equippedArmor) {
     ui.notifications.info(
-      `${target.name} is not wearing armor - no damage to apply`,
+      game.i18n.format("l5r5e-combat-helper.notifications.noArmor", {
+        name: target.name,
+      }),
     );
     return;
   }
@@ -128,7 +141,14 @@ async function applyArmorDamage(target) {
   );
 
   if (alreadyDamaged) {
-    ui.notifications.info(`${equippedArmor.name} is already Damaged`);
+    ui.notifications.info(
+      game.i18n.format(
+        "l5r5e-combat-helper.notifications.armorAlreadyDamaged",
+        {
+          name: equippedArmor.name,
+        },
+      ),
+    );
     return;
   }
 
@@ -195,7 +215,14 @@ async function applyArmorDamage(target) {
       });
     } catch (fallbackError) {
       console.error("Fallback also failed:", fallbackError);
-      ui.notifications.error(`Error damaging armor: ${error.message}`);
+      ui.notifications.error(
+        game.i18n.format(
+          "l5r5e-combat-helper.notifications.errorDamagingArmor",
+          {
+            error: error.message,
+          },
+        ),
+      );
     }
   }
 }
@@ -253,7 +280,11 @@ async function applyPermanentScar(target, mechanicalEffect, ringUsed, weapon) {
   const availableScars = scarChoices[ringUsed] || [];
 
   if (availableScars.length === 0) {
-    ui.notifications.warn(`No scar choices available for ring: ${ringUsed}`);
+    ui.notifications.warn(
+      game.i18n.format("l5r5e-combat-helper.notifications.noScarChoices", {
+        ring: ringUsed,
+      }),
+    );
     return;
   }
 
@@ -293,7 +324,10 @@ async function applyDyingConditions(target, mechanicalEffect, ringUsed) {
   }
 
   ui.notifications.error(
-    `${target.name} is Dying! They have ${dyingRounds} round(s) to receive aid.`,
+    game.i18n.format("l5r5e-combat-helper.notifications.dyingWarning", {
+      name: target.name,
+      rounds: dyingRounds,
+    }),
   );
 }
 
@@ -353,7 +387,10 @@ async function applyConditionToActor(
 
       if (conditionName === "dying" && extraData.rounds) {
         ui.notifications.error(
-          `${target.name} is Dying! They have ${extraData.rounds} round(s) to receive aid.`,
+          game.i18n.format("l5r5e-combat-helper.notifications.dyingWarning", {
+            name: target.name,
+            rounds: extraData.rounds,
+          }),
         );
       }
     } else {
@@ -361,7 +398,14 @@ async function applyConditionToActor(
     }
   } catch (error) {
     console.error(`Error applying condition ${conditionName}:`, error);
-    ui.notifications.warn(`Could not apply condition: ${conditionName}`);
+    ui.notifications.warn(
+      game.i18n.format(
+        "l5r5e-combat-helper.notifications.conditionNotApplied",
+        {
+          condition: conditionName,
+        },
+      ),
+    );
   }
 }
 
@@ -378,16 +422,31 @@ async function applyConditionToActor(
  */
 async function showScarSelectionDialog(target, ringUsed, scarChoices) {
   return new Promise((resolve) => {
+    const i18n = game.i18n;
     const options = scarChoices
       .map((scar) => `<option value="${scar}">${scar}</option>`)
       .join("");
 
+    const header = i18n.format(
+      "l5r5e-combat-helper.dialog.scarSelection.header",
+      {
+        name: target.name,
+        ring: ringUsed.toUpperCase(),
+      },
+    );
+    const permanent = i18n.localize(
+      "l5r5e-combat-helper.dialog.scarSelection.permanent",
+    );
+    const label = i18n.localize(
+      "l5r5e-combat-helper.dialog.scarSelection.label",
+    );
+
     const content = `
       <div class="critical-scar-selection">
-        <p><strong>${target.name}</strong> must choose a permanent scar for ring: <strong>${ringUsed.toUpperCase()}</strong></p>
-        <p>This disadvantage will be permanent.</p>
+        <p>${header}</p>
+        <p>${permanent}</p>
         <div class="form-group">
-          <label>Select Scar:</label>
+          <label>${label}</label>
           <select id="scar-choice" style="width: 100%">
             ${options}
           </select>
@@ -396,12 +455,14 @@ async function showScarSelectionDialog(target, ringUsed, scarChoices) {
     `;
 
     new Dialog({
-      title: "Permanent Injury - Choose Scar",
+      title: i18n.localize("l5r5e-combat-helper.dialog.scarSelection.title"),
       content: content,
       buttons: {
         confirm: {
           icon: '<i class="fas fa-check"></i>',
-          label: "Confirm",
+          label: i18n.localize(
+            "l5r5e-combat-helper.dialog.scarSelection.confirm",
+          ),
           callback: (html) => {
             const selected = html.find("#scar-choice").val();
             resolve(selected);
@@ -409,7 +470,9 @@ async function showScarSelectionDialog(target, ringUsed, scarChoices) {
         },
         cancel: {
           icon: '<i class="fas fa-times"></i>',
-          label: "Cancel",
+          label: i18n.localize(
+            "l5r5e-combat-helper.dialog.scarSelection.cancel",
+          ),
           callback: () => resolve(null),
         },
       },
@@ -435,7 +498,11 @@ async function addScarToActor(target, scarName, ringUsed) {
     const pack = game.packs.get("l5r5e.core-peculiarities-adversities");
 
     if (!pack) {
-      ui.notifications.error("Could not find L5R5e peculiarities compendium");
+      ui.notifications.error(
+        game.i18n.localize(
+          "l5r5e-combat-helper.notifications.compendiumNotFound",
+        ),
+      );
       return;
     }
 
@@ -444,14 +511,22 @@ async function addScarToActor(target, scarName, ringUsed) {
     const scarEntry = pack.index.find((entry) => entry.name === scarName);
 
     if (!scarEntry) {
-      ui.notifications.warn(`Scar "${scarName}" not found in compendium`);
+      ui.notifications.warn(
+        game.i18n.format("l5r5e-combat-helper.notifications.scarNotFound", {
+          scar: scarName,
+        }),
+      );
       return;
     }
 
     const scarItem = await pack.getDocument(scarEntry._id);
 
     if (!scarItem) {
-      ui.notifications.error(`Could not load scar "${scarName}"`);
+      ui.notifications.error(
+        game.i18n.format("l5r5e-combat-helper.notifications.scarLoadError", {
+          scar: scarName,
+        }),
+      );
       return;
     }
 
@@ -464,7 +539,11 @@ async function addScarToActor(target, scarName, ringUsed) {
     await target.createEmbeddedDocuments("Item", [itemData]);
   } catch (error) {
     console.error("Error adding scar to actor:", error);
-    ui.notifications.error(`Error applying scar: ${error.message}`);
+    ui.notifications.error(
+      game.i18n.format("l5r5e-combat-helper.notifications.errorAddingScar", {
+        error: error.message,
+      }),
+    );
   }
 }
 
@@ -490,18 +569,68 @@ async function createCriticalEffectMessage(
   ringUsed,
   weapon,
 ) {
+  const i18n = game.i18n;
   const weaponSharp = isWeaponSharp(weapon);
-  const weaponName = weapon?.name || "Unknown weapon";
+  console.log("Ring Used", ringUsed);
+  const weaponName =
+    weapon?.name ||
+    i18n.localize(
+      "l5r5e-combat-helper.chat.criticalEffectResult.unknownWeapon",
+    );
+  const sharpText = weaponSharp
+    ? i18n.localize("l5r5e-combat-helper.chat.criticalEffectResult.razorEdged")
+    : "";
+  const ringName = ringUsed
+    ? i18n.localize(`l5r5e-combat-helper.rings.${ringUsed}`)
+    : "N/A";
+
+  console.log("Ring Name", ringName);
+
+  const title = i18n.localize(
+    "l5r5e-combat-helper.chat.criticalEffectResult.title",
+  );
+  const strikes = i18n.format(
+    "l5r5e-combat-helper.chat.criticalEffectResult.strikes",
+    {
+      attacker: attacker.name,
+      target: target.name,
+    },
+  );
+  const weaponText = i18n.format(
+    "l5r5e-combat-helper.chat.criticalEffectResult.weapon",
+    {
+      weapon: weaponName,
+      sharp: sharpText,
+    },
+  );
+  const severityText = i18n.format(
+    "l5r5e-combat-helper.chat.criticalEffectResult.finalSeverity",
+    {
+      severity: severity,
+    },
+  );
+  const ringText = i18n.format(
+    "l5r5e-combat-helper.chat.criticalEffectResult.ringUsed",
+    {
+      ring: ringName,
+    },
+  );
+  const appliedText = i18n.format(
+    "l5r5e-combat-helper.chat.criticalEffectResult.effectApplied",
+    {
+      name: target.name,
+    },
+  );
 
   const content = `
     <div class="l5r5e-combat-helper critical-effect-result">
-      <h3>💀 Critical Strike Effect</h3>
-      <p><strong>${attacker.name}</strong> critically strikes <strong>${target.name}</strong></p>
+      <h3>${title}</h3>
+      <p>${strikes}</p>
       
       <div class="critical-info">
-        <p><strong>Weapon:</strong> ${weaponName} ${weaponSharp ? "(Razor-Edged)" : ""}</p>
-        <p><strong>Final Severity:</strong> ${severity}</p>
-        <p><strong>Ring Used (Mitigation):</strong> ${ringUsed ? ringUsed.toUpperCase() : "N/A"}</p>
+        <p>${weaponText}</p>
+        <p>${severityText}</p>
+        <p>${ringText}</p>
       </div>
 
       <div class="critical-result">
@@ -509,7 +638,7 @@ async function createCriticalEffectMessage(
         <p>${criticalEffect.effect}</p>
       </div>
 
-      <p class="effect-applied">Effects have been applied to ${target.name}</p>
+      <p class="effect-applied">${appliedText}</p>
     </div>
   `;
 

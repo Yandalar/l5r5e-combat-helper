@@ -53,23 +53,50 @@ export async function createDamageMessage(
   incapacitated,
   attackData,
 ) {
+  const i18n = game.i18n;
+
   let armorInfo = "";
   if (armorResistance > 0) {
-    armorInfo = `<p><em>Damage reduced by armor: ${rawDamage} - ${armorResistance} = ${damage}</em></p>`;
+    const reducedText = i18n.format(
+      "l5r5e-combat-helper.chat.damageApplied.reducedByArmor",
+      {
+        raw: rawDamage,
+        armor: armorResistance,
+        final: damage,
+      },
+    );
+    armorInfo = `<p><em>${reducedText}</em></p>`;
   }
 
   let incapacitatedMessage = "";
   if (incapacitated) {
-    incapacitatedMessage =
-      '<p class="incapacitated-warning">⚠️ <strong>INCAPACITATED!</strong></p>';
+    incapacitatedMessage = `<p class="incapacitated-warning">${i18n.localize("l5r5e-combat-helper.chat.damageApplied.incapacitated")}</p>`;
   }
+
+  const title = i18n.localize("l5r5e-combat-helper.chat.damageApplied.title");
+  const dealsTo = i18n.format(
+    "l5r5e-combat-helper.chat.damageApplied.dealsTo",
+    {
+      attacker: attacker.name,
+      damage: damage,
+      target: target.name,
+    },
+  );
+  const fatigueText = i18n.format(
+    "l5r5e-combat-helper.chat.damageApplied.fatigue",
+    {
+      current: currentFatigue,
+      new: newFatigue,
+      endurance: endurance,
+    },
+  );
 
   const content = `
     <div class="l5r5e-combat-helper">
-      <h3>💥 Damage Applied</h3>
-      <p><strong>${attacker.name}</strong> deals <strong>${damage}</strong> damage to <strong>${target.name}</strong></p>
+      <h3>${title}</h3>
+      <p>${dealsTo}</p>
       ${armorInfo}
-      <p>Fatigue: ${currentFatigue} → ${newFatigue} / ${endurance}</p>
+      <p>${fatigueText}</p>
       ${incapacitatedMessage}
     </div>
   `;
@@ -107,12 +134,33 @@ export async function createArmorBlockedMessage(
   rawDamage,
   armorResistance,
 ) {
+  const i18n = game.i18n;
+
+  const title = i18n.localize("l5r5e-combat-helper.chat.damageBlocked.title");
+  const attacks = i18n.format(
+    "l5r5e-combat-helper.chat.damageBlocked.attacks",
+    {
+      attacker: attacker.name,
+      target: target.name,
+    },
+  );
+  const calculation = i18n.format(
+    "l5r5e-combat-helper.chat.damageBlocked.calculation",
+    {
+      raw: rawDamage,
+      armor: armorResistance,
+    },
+  );
+  const absorbed = i18n.localize(
+    "l5r5e-combat-helper.chat.damageBlocked.absorbed",
+  );
+
   const content = `
     <div class="l5r5e-combat-helper armor-blocked">
-      <h3>🛡️ Damage Blocked</h3>
-      <p><strong>${attacker.name}</strong> attacks <strong>${target.name}</strong></p>
-      <p>Raw damage: ${rawDamage} - Armor: ${armorResistance} = <strong>0 damage</strong></p>
-      <p><em>The armor completely absorbed the blow!</em></p>
+      <h3>${title}</h3>
+      <p>${attacks}</p>
+      <p>${calculation}</p>
+      <p><em>${absorbed}</em></p>
     </div>
   `;
 
@@ -141,19 +189,45 @@ export async function createArmorBlockedMessage(
  * @returns {Promise<void>}
  */
 export async function createCriticalStrikeMessage(target, attacker, weapon) {
+  const i18n = game.i18n;
+
   let deadliness = 5; // Default deadliness
   if (weapon && weapon.system?.deadliness !== undefined) {
     deadliness = parseInt(weapon.system.deadliness);
   }
 
+  const title = i18n.localize("l5r5e-combat-helper.chat.criticalStrike.title");
+  const delivers = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.delivers",
+    {
+      attacker: attacker.name,
+      target: target.name,
+    },
+  );
+  const alreadyIncap = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated",
+    {
+      target: target.name,
+    },
+  );
+  const weaponDead = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness",
+    {
+      deadliness: deadliness,
+    },
+  );
+  const buttonText = i18n.localize(
+    "l5r5e-combat-helper.chat.criticalStrike.rollButton",
+  );
+
   const content = `
     <div class="l5r5e-combat-helper critical-strike">
-      <h3>💀 CRITICAL STRIKE!</h3>
-      <p><strong>${attacker.name}</strong> delivers a critical strike to <strong>${target.name}</strong>!</p>
-      <p><em>${target.name} was already Incapacitated when struck!</em></p>
-      <p><strong>Weapon Deadliness:</strong> ${deadliness}</p>
+      <h3>${title}</h3>
+      <p>${delivers}</p>
+      <p><em>${alreadyIncap}</em></p>
+      <p>${weaponDead}</p>
       <button class="critical-strike-roll-button" data-action="roll-critical">
-        ⚠️ Roll for Critical Strike consequences!
+        ${buttonText}
       </button>
     </div>
   `;
@@ -202,20 +276,55 @@ export async function createVoidCriticalStrikeMessage(
   voidAfter,
   weapon,
 ) {
+  const i18n = game.i18n;
+
   let deadliness = 5; // Default deadliness
   if (weapon && weapon.system?.deadliness !== undefined) {
     deadliness = parseInt(weapon.system.deadliness) || 5;
   }
 
+  const title = i18n.localize(
+    "l5r5e-combat-helper.chat.criticalStrike.titleVoid",
+  );
+  const voidChoice = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.voidChoice",
+    {
+      target: target.name,
+    },
+  );
+  const delivers = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.delivers",
+    {
+      attacker: attacker.name,
+      target: target.name,
+    },
+  );
+  const voidSpent = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.voidSpent",
+    {
+      before: voidBefore,
+      after: voidAfter,
+    },
+  );
+  const weaponDead = i18n.format(
+    "l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness",
+    {
+      deadliness: deadliness,
+    },
+  );
+  const buttonText = i18n.localize(
+    "l5r5e-combat-helper.chat.criticalStrike.rollButton",
+  );
+
   const content = `
     <div class="l5r5e-combat-helper critical-strike void-choice">
-      <h3>💀 CRITICAL STRIKE! (Void Choice)</h3>
-      <p><strong>${target.name}</strong> spent a Void Point and chose to suffer a Critical Strike instead of defending</p>
-      <p><strong>${attacker.name}</strong> delivers a critical strike to <strong>${target.name}</strong>!</p>
-      <p class="void-info">Void Point spent: ${voidBefore} → ${voidAfter}</p>
-      <p><strong>Weapon Deadliness:</strong> ${deadliness}</p>
+      <h3>${title}</h3>
+      <p>${voidChoice}</p>
+      <p>${delivers}</p>
+      <p class="void-info">${voidSpent}</p>
+      <p>${weaponDead}</p>
       <button class="critical-strike-roll-button" data-action="roll-critical">
-        ⚠️ Roll for Critical Strike consequences!
+        ${buttonText}
       </button>
     </div>
   `;

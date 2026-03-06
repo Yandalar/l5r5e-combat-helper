@@ -171,7 +171,9 @@ export async function spendVoidPoint(actor) {
   const currentVoid = getVoidPoints(actor);
 
   if (currentVoid <= 0) {
-    throw new Error("No void points available");
+    throw new Error(
+      game.i18n.localize("l5r5e-combat-helper.notifications.noVoidPoints"),
+    );
   }
 
   if (actor.system.void_points?.value !== undefined) {
@@ -179,7 +181,9 @@ export async function spendVoidPoint(actor) {
   }
 
   if (voidField === null) {
-    throw new Error("Could not find void field in actor");
+    throw new Error(
+      game.i18n.localize("l5r5e-combat-helper.notifications.voidFieldNotFound"),
+    );
   }
 
   const updateData = {};
@@ -219,7 +223,11 @@ export async function revertFatigueDamage(actor, damage) {
   }
 
   if (fatigueField === null) {
-    throw new Error("Could not find fatigue field in actor");
+    throw new Error(
+      game.i18n.localize(
+        "l5r5e-combat-helper.notifications.fatigueFieldNotFound",
+      ),
+    );
   }
 
   const newFatigue = Math.max(0, currentFatigue - damage);

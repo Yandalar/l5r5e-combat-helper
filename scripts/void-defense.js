@@ -75,7 +75,7 @@ function addVoidOption(html, options) {
   }
 
   optionsArray.push({
-    name: "Spend Void - Don't Defend",
+    name: game.i18n.localize("l5r5e-combat-helper.contextMenu.spendVoid"),
     icon: '<i class="fas fa-yin-yang"></i>',
 
     /**
@@ -148,12 +148,17 @@ function addVoidOption(html, options) {
       const voidBefore = getVoidPoints(target);
 
       const confirmed = await Dialog.confirm({
-        title: "Spend Void Point - Don't Defend",
-        content: `
-          <p><strong>${target.name}</strong>, spend 1 Void Point to NOT defend?</p>
-          <p><em>You will suffer a <strong>Critical Strike</strong> instead of ${attackData.finalDamage} fatigue damage.</em></p>
-          <p>Current Void: ${voidBefore}</p>
-        `,
+        title: game.i18n.localize(
+          "l5r5e-combat-helper.dialog.voidDefense.title",
+        ),
+        content: game.i18n.format(
+          "l5r5e-combat-helper.dialog.voidDefense.content",
+          {
+            name: target.name,
+            damage: attackData.finalDamage,
+            void: voidBefore,
+          },
+        ),
         yes: () => true,
         no: () => false,
         defaultYes: false,
@@ -220,7 +225,11 @@ async function handleVoidNoDefense(
   } catch (error) {
     console.error("❌ Error:", error);
     console.error("Stack:", error.stack);
-    ui.notifications.error("Error: " + error.message);
+    ui.notifications.error(
+      game.i18n.format("l5r5e-combat-helper.notifications.errorVoid", {
+        error: error.message,
+      }),
+    );
   }
 }
 

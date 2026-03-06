@@ -2,7 +2,7 @@
   "id": "l5r5e-combat-helper",
   "title": "L5R5e Combat Helper",
   "description": "Automates several situations in combat for Legend of the Five Rings 5th Edition. Calculates damage, applies armor resistance, handles Incapacitated condition, and detects Critical Strikes.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "compatibility": {
     "minimum": "11",
     "verified": "13",
@@ -15,9 +15,6 @@
       "discord": "389924038329237524",
       "url": "https://github.com/Yandalar"
     }
-  ],
-  "systems": [
-    "l5r5e"
   ],
   "esmodules": [
     "scripts/actor-utils.js",
@@ -34,6 +31,29 @@
   "styles": [
     "styles/module.css"
   ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "l5r5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.13.3"
+        }
+      }
+    ]
+  },
   "url": "https://github.com/Yandalar/l5r5e-combat-helper",
   "manifest": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/module.json",
   "download": "https://github.com/Yandalar/l5r5e-combat-helper/releases/download/v0.5.0/l5r5e-combat-helper-v0.5.0.zip",

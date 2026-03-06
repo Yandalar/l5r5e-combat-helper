@@ -24,8 +24,8 @@ Hooks.once("init", () => {
    * This allows world-level control over automation behavior.
    */
   game.settings.register("l5r5e-combat-helper", "l5r5eCombatHelper", {
-    name: "L5R5e Combat Helper",
-    hint: "Automates several situations in combat for Legend of the Five Rings 5th Edition.",
+    name: game.i18n.localize("l5r5e-combat-helper.settings.enable.name"),
+    hint: game.i18n.localize("l5r5e-combat-helper.settings.enable.hint"),
     scope: "world",
     config: true,
     type: Boolean,
@@ -40,8 +40,12 @@ Hooks.once("init", () => {
    * of defending normally.
    */
   game.settings.register("l5r5e-combat-helper", "enableVoidChoice", {
-    name: "Enable Void Point Defense Choice",
-    hint: "Allows players to spend Void to choose not to defend, suffering a Critical Strike instead.",
+    name: game.i18n.localize(
+      "l5r5e-combat-helper.settings.enableVoidChoice.name",
+    ),
+    hint: game.i18n.localize(
+      "l5r5e-combat-helper.settings.enableVoidChoice.hint",
+    ),
     scope: "world",
     config: true,
     type: Boolean,

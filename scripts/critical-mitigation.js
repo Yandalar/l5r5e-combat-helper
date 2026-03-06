@@ -178,7 +178,7 @@ async function updateCriticalMessageButton(message) {
 
     const newButton = `
       <button class="critical-strike-roll-button" disabled style="opacity: 0.6; cursor: not-allowed;">
-        ✓ Critical Resolved
+        ${game.i18n.localize("l5r5e-combat-helper.chat.criticalStrike.resolvedButton")}
       </button>
     `;
 
@@ -221,35 +221,94 @@ async function createMitigationResultMessage(
   finalSeverity,
   l5rData,
 ) {
-  const ringUsed = l5rData.ringId || "unknown";
+  const i18n = game.i18n;
+  const ringUsed = l5rData.stance || "unknown";
+  console.log("data: ", l5rData);
+  console.log("ringId: ", ringUsed);
+  const ringName = i18n.localize(`l5r5e-combat-helper.rings.${ringUsed}`);
+  console.log("mitigation ringName: ", ringName);
 
   let mitigationText = "";
 
   if (rollSucceeded) {
+    const bonusSuccesses = totalSuccesses - 1;
+    const successText = i18n.localize(
+      "l5r5e-combat-helper.chat.mitigation.success",
+    );
+    const totalSuccessesText = i18n.format(
+      "l5r5e-combat-helper.chat.mitigation.totalSuccesses",
+      {
+        total: totalSuccesses,
+        description: i18n.format(
+          "l5r5e-combat-helper.chat.mitigation.successDescription",
+          {
+            bonus: bonusSuccesses,
+          },
+        ),
+      },
+    );
+
     mitigationText = `
-      <p class="mitigation-success">✓ Success! Severity reduced by ${severityReduction}</p>
-      <p><strong>Total Successes:</strong> ${totalSuccesses} (1 base + ${totalSuccesses - 1} bonus)</p>
+      <p class="mitigation-success">${i18n.format(successText, { reduction: severityReduction })}</p>
+      <p>${totalSuccessesText}</p>
     `;
   } else {
+    const failureText = i18n.localize(
+      "l5r5e-combat-helper.chat.mitigation.failure",
+    );
+    const totalSuccessesText = i18n.format(
+      "l5r5e-combat-helper.chat.mitigation.totalSuccesses",
+      {
+        total: totalSuccesses,
+        description: i18n.localize(
+          "l5r5e-combat-helper.chat.mitigation.failureDescription",
+        ),
+      },
+    );
+
     mitigationText = `
-      <p class="mitigation-failure">✗ Failed to mitigate</p>
-      <p><strong>Total Successes:</strong> ${totalSuccesses} (TN 1 not met)</p>
+      <p class="mitigation-failure">${failureText}</p>
+      <p>${totalSuccessesText}</p>
     `;
   }
 
+  const title = i18n.localize("l5r5e-combat-helper.chat.mitigation.title");
+  const rolls = i18n.format("l5r5e-combat-helper.chat.mitigation.rolls", {
+    name: actor.name,
+  });
+  const ringUsedText = i18n.format(
+    "l5r5e-combat-helper.chat.mitigation.ringUsed",
+    { ring: ringName },
+  );
+  const baseSeverityText = i18n.format(
+    "l5r5e-combat-helper.chat.mitigation.baseSeverity",
+    { severity: baseSeverity },
+  );
+  const mitigationAmount = i18n.format(
+    "l5r5e-combat-helper.chat.mitigation.mitigationAmount",
+    { reduction: severityReduction },
+  );
+  const finalSeverityText = i18n.format(
+    "l5r5e-combat-helper.chat.mitigation.finalSeverity",
+    { severity: finalSeverity },
+  );
+  const nextStep = i18n.localize(
+    "l5r5e-combat-helper.chat.mitigation.nextStep",
+  );
+
   const content = `
     <div class="l5r5e-combat-helper critical-mitigation">
-      <h3>🎲 Critical Strike Mitigation</h3>
-      <p><strong>${actor.name}</strong> rolls Fitness to mitigate the critical strike</p>
-      <p><strong>Ring Used:</strong> ${ringUsed.charAt(0).toUpperCase() + ringUsed.slice(1)}</p>
+      <h3>${title}</h3>
+      <p>${rolls}</p>
+      <p>${ringUsedText}</p>
       ${mitigationText}
       <div class="severity-calculation">
-        <p><strong>Base Severity (Weapon Deadliness):</strong> ${baseSeverity}</p>
-        <p><strong>Mitigation:</strong> -${severityReduction}</p>
+        <p>${baseSeverityText}</p>
+        <p>${mitigationAmount}</p>
         <hr>
-        <p><strong>Final Severity:</strong> ${finalSeverity}</p>
+        <p>${finalSeverityText}</p>
       </div>
-      <p class="next-step">⏩ Consulting critical effects table...</p>
+      <p class="next-step">${nextStep}</p>
     </div>
   `;
 
