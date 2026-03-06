@@ -10,14 +10,13 @@
  *
  * Each table entry contains:
  * - Severity range (minSeverity / maxSeverity)
- * - Human-readable effect name
- * - Narrative description of the effect
+ * - Effect key for localization
  * - Mechanical instructions used by the module to apply conditions,
  *   armor damage, scars, or death.
  */
 
 /**
- * Critical Effects Table
+ * Critical Effects Table (Raw Data)
  *
  * The system will search this table to determine which effect applies
  * based on the final severity value produced by a critical strike.
@@ -26,8 +25,8 @@
  * {
  *   minSeverity: number,
  *   maxSeverity: number,
- *   name: string,
- *   effect: string,
+ *   nameKey: string,        // Localization key for effect name
+ *   effectKey: string,      // Localization key for effect description
  *   mechanicalEffect: {
  *     type: string,
  *     ...additional fields depending on type
@@ -43,13 +42,12 @@
  *
  * @type {Array<Object>}
  */
-export const CRITICAL_EFFECTS_TABLE = [
+const CRITICAL_EFFECTS_TABLE_RAW = [
   {
     minSeverity: 0,
     maxSeverity: 2,
-    name: "Close Call",
-    effect:
-      "If the character is wearing armor, the armor gains the Damaged quality (see page 240)",
+    nameKey: "closeCall",
+    effectKey: "closeCallEffect",
     mechanicalEffect: {
       type: "armor_damaged",
       armorDamaged: true,
@@ -58,9 +56,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 3,
     maxSeverity: 4,
-    name: "Flesh Wound",
-    effect:
-      "The character suffers the Lightly Wounded condition for the ring they used for their check to resist. If the attack had the Razor-Edged quality, the character also suffers the Bleeding condition.",
+    nameKey: "fleshWound",
+    effectKey: "fleshWoundEffect",
     mechanicalEffect: {
       type: "condition",
       conditions: ["lightly_wounded"],
@@ -75,9 +72,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 5,
     maxSeverity: 6,
-    name: "Debilitating Gash",
-    effect:
-      "The character suffers the Severely Wounded condition for the ring they used they used for their check to resist. If the attack had the Razor-Edged quality, the character also suffers the Bleeding condition.",
+    nameKey: "debilitatingGash",
+    effectKey: "debilitatingGashEffect",
     mechanicalEffect: {
       type: "condition",
       conditions: ["severely_wounded"],
@@ -92,9 +88,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 7,
     maxSeverity: 8,
-    name: "Permanent Injury",
-    effect:
-      "The character suffers the Bleeding condition, then chooses one scar of the following disadvantages for the ring they used for their check to resist.",
+    nameKey: "permanentInjury",
+    effectKey: "permanentInjuryEffect",
     mechanicalEffect: {
       type: "permanent_scar",
       conditions: ["bleeding"],
@@ -110,9 +105,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 9,
     maxSeverity: 11,
-    name: "Maiming Blow",
-    effect:
-      "The character suffers the Bleeding condition, then chooses one scar disadvantage associated with the ring used for the mitigation check.",
+    nameKey: "maimingBlow",
+    effectKey: "maimingBlowEffect",
     mechanicalEffect: {
       type: "permanent_scar",
       conditions: ["bleeding"],
@@ -128,9 +122,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 12,
     maxSeverity: 13,
-    name: "Agonizing Death",
-    effect:
-      "The character suffers the Severely Wounded condition, Bleeding, and Dying (3 rounds).",
+    nameKey: "agonizingDeath",
+    effectKey: "agonizingDeathEffect",
     mechanicalEffect: {
       type: "dying",
       conditions: ["severely_wounded", "bleeding", "dying_3"],
@@ -140,9 +133,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 14,
     maxSeverity: 15,
-    name: "Swift Death",
-    effect:
-      "The character suffers the Severely Wounded condition, Bleeding, and Dying (1 round).",
+    nameKey: "swiftDeath",
+    effectKey: "swiftDeathEffect",
     mechanicalEffect: {
       type: "dying",
       conditions: ["severely_wounded", "bleeding", "dying_1"],
@@ -152,8 +144,8 @@ export const CRITICAL_EFFECTS_TABLE = [
   {
     minSeverity: 16,
     maxSeverity: 999,
-    name: "Instant Death",
-    effect: "The character dies immediately.",
+    nameKey: "instantDeath",
+    effectKey: "instantDeathEffect",
     mechanicalEffect: {
       type: "instant_death",
       conditions: ["dead"],
@@ -164,23 +156,44 @@ export const CRITICAL_EFFECTS_TABLE = [
 /**
  * Retrieves the appropriate critical effect entry based on severity.
  *
- * The function iterates through the CRITICAL_EFFECTS_TABLE and returns
+ * The function iterates through the CRITICAL_EFFECTS_TABLE_RAW and returns
  * the first entry whose severity range includes the provided value.
+ * The returned object includes localized name and effect description.
  *
  * If the severity exceeds all defined ranges, the final table entry
  * (Instant Death) is returned as a fallback.
  *
  * @param {number} severity Final calculated severity after mitigation rolls.
- * @returns {Object} The critical effect table entry that matches the severity value.
+ * @returns {Object} The critical effect table entry with localized name and effect.
  */
 export function getCriticalEffect(severity) {
-  for (let effect of CRITICAL_EFFECTS_TABLE) {
+  const i18n = game.i18n;
+
+  for (let effect of CRITICAL_EFFECTS_TABLE_RAW) {
     if (severity >= effect.minSeverity && severity <= effect.maxSeverity) {
-      return effect;
+      return {
+        ...effect,
+        name: i18n.localize(
+          `l5r5e-combat-helper.criticalEffects.${effect.nameKey}`,
+        ),
+        effect: i18n.localize(
+          `l5r5e-combat-helper.criticalEffects.${effect.effectKey}`,
+        ),
+      };
     }
   }
 
-  return CRITICAL_EFFECTS_TABLE[CRITICAL_EFFECTS_TABLE.length - 1];
+  const fallback =
+    CRITICAL_EFFECTS_TABLE_RAW[CRITICAL_EFFECTS_TABLE_RAW.length - 1];
+  return {
+    ...fallback,
+    name: i18n.localize(
+      `l5r5e-combat-helper.criticalEffects.${fallback.nameKey}`,
+    ),
+    effect: i18n.localize(
+      `l5r5e-combat-helper.criticalEffects.${fallback.effectKey}`,
+    ),
+  };
 }
 
 /**

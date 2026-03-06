@@ -82,7 +82,7 @@ export function registerCombatHandler() {
         const targets = Array.from(game.user.targets);
         if (targets.length === 0) {
           ui.notifications.warn(
-            "L5R5e Combat Helper: No targets in the roll or selected",
+            game.i18n.localize("l5r5e-combat-helper.notifications.noTargets"),
           );
           return;
         }
@@ -243,6 +243,13 @@ async function applyDamage(
     );
   } catch (error) {
     console.error("L5R5e Combat Helper | Error applying damage:", error);
-    ui.notifications.error("Error applying damage: " + error.message);
+    ui.notifications.error(
+      game.i18n.format(
+        "l5r5e-combat-helper.notifications.errorApplyingDamage",
+        {
+          error: error.message,
+        },
+      ),
+    );
   }
 }
