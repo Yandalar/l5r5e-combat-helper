@@ -2,7 +2,7 @@
   "id": "l5r5e-combat-helper",
   "title": "L5R5e Combat Helper",
   "description": "Automates several situations in combat for Legend of the Five Rings 5th Edition. Calculates damage, applies armor resistance, handles Incapacitated condition, and detects Critical Strikes.",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "compatibility": {
     "minimum": "11",
     "verified": "13",
@@ -25,6 +25,7 @@
     "scripts/critical-effects-application.js",
     "scripts/critical-strike-roll.js",
     "scripts/void-defense.js",
+    "scripts/shattering-parry.js",
     "scripts/combat-handler.js",
     "scripts/main.js"
   ],

@@ -132,5 +132,20 @@
   "l5r5e-combat-helper.rings.fire": "Fire",
   "l5r5e-combat-helper.rings.water": "Water",
   "l5r5e-combat-helper.rings.void": "Void",
-  "l5r5e-combat-helper.rings.unknown": "Unknown"
+  "l5r5e-combat-helper.rings.unknown": "Unknown",
+  "l5r5e-combat-helper.contextMenu.shatteringParry": "Shattering Parry — Reroll Mitigation",
+  "l5r5e-combat-helper.notifications.shatteringParryNoWeapon": "No readied or equipped weapon found for Shattering Parry",
+  "l5r5e-combat-helper.notifications.weaponAlreadyDamaged": "{name} is already Damaged",
+  "l5r5e-combat-helper.notifications.errorShatteringParry": "Error during Shattering Parry: {error}",
+  "l5r5e-combat-helper.notifications.errorDamagingWeapon": "Error applying Damaged quality to weapon: {error}",
+  "l5r5e-combat-helper.notifications.shatteringParryArmorRevertManual": "⚠️ {name}'s armor was damaged by the original critical — GM should manually remove the Damaged quality if appropriate.",
+  "l5r5e-combat-helper.notifications.shatteringParryScarRevertManual": "⚠️ {name} received a permanent scar from the original critical — GM should manually remove it if appropriate.",
+  "l5r5e-combat-helper.notifications.shatteringParryDeathRevertManual": "⚠️ {name} was killed by the original critical — GM must manually revert the death condition.",
+  "l5r5e-combat-helper.dialog.shatteringParry.title": "Shattering Parry",
+  "l5r5e-combat-helper.dialog.shatteringParry.content": "<p><strong>{name}</strong> uses <strong>Shattering Parry</strong>!</p><p>All mitigation dice will be rerolled. <strong>{weapon}</strong> will gain the <em>Damaged</em> quality.</p><p><em>Previously applied critical effects will be reversed. This ability can only be used once per session.</em></p>",
+  "l5r5e-combat-helper.chat.shatteringParry.title": "🛡️ SHATTERING PARRY!",
+  "l5r5e-combat-helper.chat.shatteringParry.uses": "<strong>{name}</strong> uses Shattering Parry!",
+  "l5r5e-combat-helper.chat.shatteringParry.weapon": "⚔️ <strong>{weapon}</strong> takes the brunt of the blow and gains the <em>Damaged</em> quality.",
+  "l5r5e-combat-helper.chat.shatteringParry.reverts": "Previous critical effects have been reversed.",
+  "l5r5e-combat-helper.chat.shatteringParry.rerolls": "⏩ Rerolling all Fitness dice for mitigation…"
 }

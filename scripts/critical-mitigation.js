@@ -113,7 +113,7 @@ async function processCriticalMitigation(
 
   const ringUsed = l5rData.stance || "void";
 
-  await createMitigationResultMessage(
+  const mitigationMessage = await createMitigationResultMessage(
     actor,
     weaponDeadliness,
     totalSuccesses,
@@ -127,6 +127,7 @@ async function processCriticalMitigation(
 
   let attacker = null;
   let weapon = null;
+  let attackerWeaponId = null;
 
   if (criticalMessage) {
     const criticalData = criticalMessage.getFlag(
@@ -136,6 +137,7 @@ async function processCriticalMitigation(
 
     if (criticalData) {
       attacker = game.actors.get(criticalData.attackerId);
+      attackerWeaponId = criticalData.weaponId || null;
 
       if (criticalData.weaponId) {
         weapon = attacker?.items.get(criticalData.weaponId);
@@ -155,6 +157,32 @@ async function processCriticalMitigation(
   }
 
   await applyCriticalEffect(actor, finalSeverity, ringUsed, weapon, attacker);
+
+  // Store Shattering Parry data in the mitigation result message so the
+  // context-menu handler can retrieve it later.
+  // Only store on the first (non-reroll) resolution to avoid re-arming.
+  if (mitigationMessage && !mitigationData.isShatteringParryReroll) {
+    // Capture whether the attacking weapon had Razor-Edged NOW (before it could
+    // change) so reverseCriticalEffect can correctly undo conditional bleeding.
+    const { isWeaponSharp } = await import("./critical-effects-table.js");
+    const wasWeaponSharp = isWeaponSharp(weapon);
+
+    await mitigationMessage.setFlag(
+      "l5r5e-combat-helper",
+      "shatteringParryData",
+      {
+        targetId: actor.id,
+        attackerId: attacker?.id || null,
+        weaponDeadliness,
+        criticalMessageId,
+        finalSeverity,
+        ringUsed,
+        weaponId: attackerWeaponId,
+        wasWeaponSharp,
+        used: false,
+      },
+    );
+  }
 
   // Update the original message UI
   if (criticalMessage) {
@@ -223,10 +251,7 @@ async function createMitigationResultMessage(
 ) {
   const i18n = game.i18n;
   const ringUsed = l5rData.stance || "unknown";
-  console.log("data: ", l5rData);
-  console.log("ringId: ", ringUsed);
   const ringName = i18n.localize(`l5r5e-combat-helper.rings.${ringUsed}`);
-  console.log("mitigation ringName: ", ringName);
 
   let mitigationText = "";
 
@@ -312,7 +337,7 @@ async function createMitigationResultMessage(
     </div>
   `;
 
-  await ChatMessage.create({
+  return await ChatMessage.create({
     content: content,
     speaker: ChatMessage.getSpeaker({ actor: actor }),
   });

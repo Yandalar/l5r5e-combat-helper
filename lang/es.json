@@ -132,5 +132,20 @@
   "l5r5e-combat-helper.rings.fire": "Fuego",
   "l5r5e-combat-helper.rings.water": "Agua",
   "l5r5e-combat-helper.rings.void": "Vacío",
-  "l5r5e-combat-helper.rings.unknown": "Desconocido"
+  "l5r5e-combat-helper.rings.unknown": "Desconocido",
+  "l5r5e-combat-helper.contextMenu.shatteringParry": "Parada Destructiva — Relanzar Mitigación",
+  "l5r5e-combat-helper.notifications.shatteringParryNoWeapon": "No se encontró ningún arma lista o equipada para la Parada Destructiva",
+  "l5r5e-combat-helper.notifications.weaponAlreadyDamaged": "{name} ya está Dañada",
+  "l5r5e-combat-helper.notifications.errorShatteringParry": "Error durante la Parada Destructiva: {error}",
+  "l5r5e-combat-helper.notifications.errorDamagingWeapon": "Error al aplicar la propiedad Dañada al arma: {error}",
+  "l5r5e-combat-helper.notifications.shatteringParryArmorRevertManual": "⚠️ La armadura de {name} fue dañada por el crítico original — el DM debe retirar manualmente la propiedad Dañada si corresponde.",
+  "l5r5e-combat-helper.notifications.shatteringParryScarRevertManual": "⚠️ {name} recibió una cicatriz permanente del crítico original — el DM debe retirarla manualmente si corresponde.",
+  "l5r5e-combat-helper.notifications.shatteringParryDeathRevertManual": "⚠️ {name} murió a causa del crítico original — el DM debe revertir manualmente la condición de muerte.",
+  "l5r5e-combat-helper.dialog.shatteringParry.title": "Parada Destructiva",
+  "l5r5e-combat-helper.dialog.shatteringParry.content": "<p><strong>{name}</strong> usa <strong>Parada Destructiva</strong>!</p><p>Todos los dados de mitigación serán relanzados. <strong>{weapon}</strong> obtendrá la propiedad <em>Dañada</em>.</p><p><em>Los efectos críticos aplicados anteriormente serán revertidos. Esta habilidad solo puede usarse una vez por sesión.</em></p>",
+  "l5r5e-combat-helper.chat.shatteringParry.title": "🛡️ ¡PARADA DESTRUCTIVA!",
+  "l5r5e-combat-helper.chat.shatteringParry.uses": "<strong>{name}</strong> usa Parada Destructiva!",
+  "l5r5e-combat-helper.chat.shatteringParry.weapon": "⚔️ <strong>{weapon}</strong> absorbe el impacto y obtiene la propiedad <em>Dañada</em>.",
+  "l5r5e-combat-helper.chat.shatteringParry.reverts": "Los efectos críticos anteriores han sido revertidos.",
+  "l5r5e-combat-helper.chat.shatteringParry.rerolls": "⏩ Relanzando todos los dados de Aptitud para mitigación…"
 }

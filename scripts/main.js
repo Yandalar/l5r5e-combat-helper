@@ -15,6 +15,7 @@ import { registerCombatHandler } from "./combat-handler.js";
 import { registerVoidDefenseHook } from "./void-defense.js";
 import { registerCriticalStrikeRollHandler } from "./critical-strike-roll.js";
 import { registerCriticalMitigationHandler } from "./critical-mitigation.js";
+import { registerShatteringParryHook } from "./shattering-parry.js";
 
 Hooks.once("init", () => {
   /**
@@ -56,6 +57,9 @@ Hooks.once("init", () => {
 // Register chat context hook early so it is available
 // as soon as the chat log UI becomes interactive.
 registerVoidDefenseHook();
+
+// Register Shattering Parry context menu hook
+registerShatteringParryHook();
 
 // Register critical strike roll button handler
 registerCriticalStrikeRollHandler();
