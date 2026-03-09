@@ -12,6 +12,7 @@ An automation module for Foundry VTT that streamlines combat damage application 
 - **Armor Reduction**: Automatically subtracts equipped armor's physical resistance from damage
 - **Void Reaction – Don't Defend**: Targets may spend a Void Point to willingly suffer a Critical Strike instead of defending
 - **Critical Strike Mitigation**: Characters can roll Fitness to reduce the severity of incoming critical strikes
+- **Shattering Parry**: After rolling mitigation, characters may parry the blow with a readied weapon, rerolling all mitigation dice at the cost of that weapon gaining the Damaged quality
 - **Automatic Critical Resolution**: Critical strike severity is calculated automatically based on weapon deadliness and mitigation
 - **Incapacitated Detection**: Detects when a character becomes incapacitated
 - **Smart Weapon Detection**: Automatically finds equipped/readied weapons and uses their damage values
@@ -73,6 +74,11 @@ Access module settings via **Game Settings → Configure Settings → Module Set
 - **Default**: Enabled
 - Toggles automatic damage application on/off
 
+#### Enable Void Point Defense Choice
+
+- **Default**: Enabled
+- Allows players to spend Void to willingly accept a Critical Strike instead of defending
+
 ## Game Mechanics
 
 ### Damage Calculation
@@ -101,12 +107,7 @@ When a character's fatigue exceeds their endurance:
 
 ### Critical Strikes
 
-If an attack targets a character who is:
-
-- Already Incapacitated, OR
-- Has fatigue > endurance
-
-When a character suffers a Critical Strike, the module will:
+If an attack targets a character who is already Incapacitated or has fatigue > endurance, the module will:
 
 - Determine the **weapon deadliness**
 - Prompt a **Fitness mitigation roll**
@@ -134,15 +135,33 @@ If confirmed:
 
 When a character suffers a Critical Strike, they may roll **Fitness (TN 1)** to reduce its severity.
 
-Mitigation rules:
-
 The module automatically:
 
 - Detects the completed **Fitness roll**
-- Calculates the **severity reduction**
+- Calculates the **severity reduction** (1 + bonus successes on success, 0 on failure)
 - Determines the **final critical severity**
 - Applies the corresponding **critical effect**
 - Displays a **summary message in chat**
+
+### Shattering Parry
+
+Once per critical strike resolution, after rolling Fitness to mitigate, a character may invoke a **Shattering Parry** to reroll all mitigation dice, at the cost of their readied weapon gaining the **Damaged** quality.
+
+To use Shattering Parry:
+
+1. Complete the **Fitness mitigation roll** as normal
+2. Right-click the **mitigation result message** in chat
+3. Select **"Shattering Parry — Reroll Mitigation"**
+4. Confirm the action
+
+If confirmed:
+
+- Any **critical effects already applied** from the original roll are **automatically reversed** (conditions removed, scar deleted)
+- The **readied weapon gains the Damaged quality**
+- A **new Fitness mitigation roll** is launched — only this result counts
+- Effects that cannot be automatically reversed (armor damage from a Close Call, instant death) will show a **GM notification** for manual review
+
+> **Note:** Shattering Parry can only be used once per mitigation result message. The option disappears from the context menu after it has been triggered.
 
 ## Chat Message Examples
 
@@ -182,6 +201,16 @@ Hida Kisada was already Incapacitated when struck!
 ⚠️ Roll for Critical Strike consequences!
 ```
 
+### Shattering Parry
+
+```
+🛡️ SHATTERING PARRY!
+Hida Kisada uses Shattering Parry!
+⚔️ Kisada's Tetsubo takes the brunt of the blow and gains the Damaged quality.
+Previous critical effects have been reversed.
+⏩ Rerolling all Fitness dice for mitigation…
+```
+
 ## Requirements
 
 - **Foundry VTT**: Version 11 or higher
@@ -210,7 +239,6 @@ The module expects actors to have:
 
 - [ ] Support for supernatural damage and armor
 - [ ] Technique damage modifications
-- [ ] Multi-language support
 
 ## Credits
 

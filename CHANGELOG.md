@@ -2,21 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.6.0] - 2026-03-01
+## [0.8.0] - 2026-03-09
 
 ### Added
 
-- Added the possibility to spend a Void Point to willingly **not defend an attack** and receive a **Critical Strike** instead.
-- Right-clicking a successful attack message now provides the option **"Spend Void – Don't Defend"**.
+- Implemented **Shattering Parry** reaction for Critical Strike mitigation.
+- After rolling Fitness to mitigate a Critical Strike, right-clicking the mitigation result message now provides the option **"Shattering Parry — Reroll Mitigation"**.
 - When confirmed:
-  - The attack's previously applied **Fatigue damage is reverted**.
-  - The actor **spends one Void Point**.
-  - A **Critical Strike resolution message** is generated.
+  - Any **critical effects already applied** from the original mitigation roll are **automatically reversed** (conditions removed, scar item deleted from actor).
+  - The **parrying weapon gains the Damaged quality**.
+  - A **new Fitness mitigation roll** is launched, replacing the original result entirely.
+- Reversal of non-automatable effects (armor damage from a Close Call, instant death) shows a **GM notification** prompting manual review.
+- Added Spanish localization (`es.json`) for all new strings.
 
-### Changes
+### Internal
 
-- Removed unnecessary UI notifications.
-- Removed function that automatically applied the **Incapacitated** state.
+- Added `shattering-parry.js` module handling context menu registration, effect reversal orchestration, weapon damage, and reroll launch.
+- Added `reverseCriticalEffect()` export to `critical-effects-application.js`, symmetrically undoing conditions, scar items, and dying states.
+- Added `removeScarFromActor()` helper that identifies the previously created scar item via actor flag (`shatteringParryScarItemId`) and deletes it via `deleteEmbeddedDocuments`.
+- `addScarToActor()` now returns the created item `id`, stored in the actor flag for later reversal.
+- `applyPermanentScar()` persists the created scar item id to the actor flag.
+- `createMitigationResultMessage()` now returns the created `ChatMessage` so the mitigation handler can attach `shatteringParryData` flags to it.
+- `shatteringParryData` flag on the mitigation message stores `wasWeaponSharp` (boolean snapshot at roll time) to correctly reverse conditional Bleeding on revert without needing to re-resolve the attacker's weapon.
 
 ---
 
@@ -60,3 +67,21 @@ All notable changes to this project will be documented in this file.
   - `critical mitigation handler`
 - Improved error handling during combat resolution.
 - Refactored combat logic into **pure calculation helpers** and **document mutation utilities**.
+
+---
+
+## [0.6.0] - 2026-03-01
+
+### Added
+
+- Added the possibility to spend a Void Point to willingly **not defend an attack** and receive a **Critical Strike** instead.
+- Right-clicking a successful attack message now provides the option **"Spend Void – Don't Defend"**.
+- When confirmed:
+  - The attack's previously applied **Fatigue damage is reverted**.
+  - The actor **spends one Void Point**.
+  - A **Critical Strike resolution message** is generated.
+
+### Changes
+
+- Removed unnecessary UI notifications.
+- Removed function that automatically applied the **Incapacitated** state.

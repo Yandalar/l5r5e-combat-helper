@@ -21,6 +21,225 @@
 import { getCriticalEffect, isWeaponSharp } from "./critical-effects-table.js";
 
 /**
+ * Reverses the conditions applied by a condition-type critical effect.
+ *
+ * @param {Actor} target
+ * @param {Object} mechanicalEffect
+ * @param {string|null} ringUsed
+ * @param {boolean} wasWeaponSharp - Whether the original weapon had Razor-Edged
+ * @returns {Promise<void>}
+ */
+async function reverseConditions(
+  target,
+  mechanicalEffect,
+  ringUsed,
+  wasWeaponSharp,
+) {
+  const { conditions, conditionalConditions } = mechanicalEffect;
+
+  for (const condition of conditions) {
+    await removeConditionFromActor(target, condition, ringUsed);
+  }
+
+  if (conditionalConditions) {
+    for (const conditional of conditionalConditions) {
+      if (conditional.condition === "weapon_sharp" && wasWeaponSharp) {
+        for (const extraCondition of conditional.applies) {
+          await removeConditionFromActor(target, extraCondition, ringUsed);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Removes a single condition from an actor, mirroring the ID resolution
+ * logic in applyConditionToActor.
+ *
+ * @param {Actor} target
+ * @param {string} conditionName
+ * @param {string|null} ringUsed
+ * @returns {Promise<void>}
+ */
+async function removeConditionFromActor(
+  target,
+  conditionName,
+  ringUsed = null,
+) {
+  try {
+    let statusId = null;
+
+    if (conditionName === "lightly_wounded" && ringUsed) {
+      statusId = `lightly_wounded_${ringUsed}`;
+    } else if (conditionName === "severely_wounded" && ringUsed) {
+      statusId = `severely_wounded_${ringUsed}`;
+    } else if (conditionName === "bleeding") {
+      statusId = "bleeding";
+    } else if (conditionName === "dying") {
+      statusId = "dying";
+    } else if (conditionName === "dead" || conditionName === "unconscious") {
+      statusId = "unconscious";
+    } else if (conditionName === "incapacitated") {
+      statusId = "incapacitated";
+    }
+
+    if (statusId) {
+      await target.toggleStatusEffect(statusId, { active: false });
+    }
+  } catch (error) {
+    console.warn(
+      `L5R5e Combat Helper | Could not remove condition ${conditionName}:`,
+      error,
+    );
+  }
+}
+
+/**
+ * Removes a scar item previously added by a critical strike, identified
+ * by the id stored in the actor flag `shatteringParryScarItemId`.
+ * Clears the flag after a successful removal.
+ *
+ * @param {Actor} target
+ * @returns {Promise<void>}
+ */
+async function removeScarFromActor(target) {
+  try {
+    const scarItemId = target.getFlag(
+      "l5r5e-combat-helper",
+      "shatteringParryScarItemId",
+    );
+
+    if (!scarItemId) {
+      // No stored id — nothing to remove automatically
+      ui.notifications.warn(
+        game.i18n.format(
+          "l5r5e-combat-helper.notifications.shatteringParryScarRevertManual",
+          { name: target.name },
+        ),
+      );
+      return;
+    }
+
+    const scarItem = target.items.get(scarItemId);
+
+    if (!scarItem) {
+      // Item no longer exists on the actor (maybe already removed manually)
+      await target.unsetFlag(
+        "l5r5e-combat-helper",
+        "shatteringParryScarItemId",
+      );
+      return;
+    }
+
+    await target.deleteEmbeddedDocuments("Item", [scarItemId]);
+    await target.unsetFlag("l5r5e-combat-helper", "shatteringParryScarItemId");
+  } catch (error) {
+    console.error("L5R5e Combat Helper | Error removing scar:", error);
+    ui.notifications.warn(
+      game.i18n.format(
+        "l5r5e-combat-helper.notifications.shatteringParryScarRevertManual",
+        { name: target.name },
+      ),
+    );
+  }
+}
+
+/**
+ * Attempts to reverse the mechanical effects of a previously applied
+ * critical strike. This is used by Shattering Parry to undo effects
+ * before a reroll is made.
+ *
+ * Reversal is best-effort: conditions are toggled off, armor damage
+ * cannot be undone automatically (a notification is shown instead),
+ * and permanent scars are flagged for manual GM review since removing
+ * embedded items is destructive.
+ *
+ * @param {Actor} target - The actor whose critical effects should be reversed
+ * @param {number} finalSeverity - The severity that was previously applied
+ * @param {string|null} ringUsed - The ring used in the original mitigation
+ * @param {Item|null} weapon - The weapon that caused the original critical
+ * @returns {Promise<void>}
+ */
+export async function reverseCriticalEffect(
+  target,
+  finalSeverity,
+  ringUsed,
+  wasWeaponSharp,
+) {
+  const criticalEffect = getCriticalEffect(finalSeverity);
+  if (!criticalEffect) return;
+
+  const { mechanicalEffect } = criticalEffect;
+
+  try {
+    switch (mechanicalEffect.type) {
+      case "armor_damaged":
+        // Armor damage cannot be auto-reversed — notify GM
+        ui.notifications.warn(
+          game.i18n.format(
+            "l5r5e-combat-helper.notifications.shatteringParryArmorRevertManual",
+            { name: target.name },
+          ),
+        );
+        break;
+
+      case "condition":
+        await reverseConditions(
+          target,
+          mechanicalEffect,
+          ringUsed,
+          wasWeaponSharp,
+        );
+        break;
+
+      case "permanent_scar":
+        // Remove the scar item that was added, identified by the stored flag.
+        await removeScarFromActor(target);
+        // Also remove base conditions applied alongside the scar (e.g. bleeding).
+        if (mechanicalEffect.conditions) {
+          for (const cond of mechanicalEffect.conditions) {
+            await removeConditionFromActor(target, cond, ringUsed);
+          }
+        }
+        break;
+
+      case "dying":
+        if (mechanicalEffect.conditions) {
+          for (const cond of mechanicalEffect.conditions) {
+            if (cond.startsWith("dying_")) {
+              await removeConditionFromActor(target, "dying", ringUsed);
+            } else {
+              await removeConditionFromActor(target, cond, ringUsed);
+            }
+          }
+        }
+        break;
+
+      case "instant_death":
+        // Cannot reverse death automatically — notify GM
+        ui.notifications.warn(
+          game.i18n.format(
+            "l5r5e-combat-helper.notifications.shatteringParryDeathRevertManual",
+            { name: target.name },
+          ),
+        );
+        break;
+
+      default:
+        console.warn(
+          "L5R5e Combat Helper | reverseCriticalEffect: unknown type",
+          mechanicalEffect.type,
+        );
+    }
+  } catch (error) {
+    console.error(
+      "L5R5e Combat Helper | Error reversing critical effect:",
+      error,
+    );
+  }
+}
+
+/**
  * Applies a critical strike effect to a target actor.
  *
  * This function retrieves the correct entry from the critical effects table
@@ -295,7 +514,15 @@ async function applyPermanentScar(target, mechanicalEffect, ringUsed, weapon) {
   );
 
   if (selectedScar) {
-    await addScarToActor(target, selectedScar, ringUsed);
+    const createdItemId = await addScarToActor(target, selectedScar, ringUsed);
+    // Store the id so Shattering Parry can remove it if triggered afterward.
+    if (createdItemId) {
+      await target.setFlag(
+        "l5r5e-combat-helper",
+        "shatteringParryScarItemId",
+        createdItemId,
+      );
+    }
   }
 }
 
@@ -503,7 +730,7 @@ async function addScarToActor(target, scarName, ringUsed) {
           "l5r5e-combat-helper.notifications.compendiumNotFound",
         ),
       );
-      return;
+      return null;
     }
 
     await pack.getIndex();
@@ -516,7 +743,7 @@ async function addScarToActor(target, scarName, ringUsed) {
           scar: scarName,
         }),
       );
-      return;
+      return null;
     }
 
     const scarItem = await pack.getDocument(scarEntry._id);
@@ -527,7 +754,7 @@ async function addScarToActor(target, scarName, ringUsed) {
           scar: scarName,
         }),
       );
-      return;
+      return null;
     }
 
     const itemData = scarItem.toObject();
@@ -536,7 +763,9 @@ async function addScarToActor(target, scarName, ringUsed) {
     itemData.system.bought_at_rank = 0;
     itemData.system.ring = ringUsed;
 
-    await target.createEmbeddedDocuments("Item", [itemData]);
+    const created = await target.createEmbeddedDocuments("Item", [itemData]);
+    // Return the id of the newly created embedded item so callers can store it
+    return created?.[0]?.id || null;
   } catch (error) {
     console.error("Error adding scar to actor:", error);
     ui.notifications.error(
@@ -544,6 +773,7 @@ async function addScarToActor(target, scarName, ringUsed) {
         error: error.message,
       }),
     );
+    return null;
   }
 }
 
@@ -571,7 +801,7 @@ async function createCriticalEffectMessage(
 ) {
   const i18n = game.i18n;
   const weaponSharp = isWeaponSharp(weapon);
-  console.log("Ring Used", ringUsed);
+
   const weaponName =
     weapon?.name ||
     i18n.localize(
@@ -583,8 +813,6 @@ async function createCriticalEffectMessage(
   const ringName = ringUsed
     ? i18n.localize(`l5r5e-combat-helper.rings.${ringUsed}`)
     : "N/A";
-
-  console.log("Ring Name", ringName);
 
   const title = i18n.localize(
     "l5r5e-combat-helper.chat.criticalEffectResult.title",

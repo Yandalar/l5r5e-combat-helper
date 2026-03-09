@@ -25,6 +25,7 @@
     "scripts/critical-effects-application.js",
     "scripts/critical-strike-roll.js",
     "scripts/void-defense.js",
+    "scripts/shattering-parry.js",
     "scripts/combat-handler.js",
     "scripts/main.js"
   ],
