@@ -11,6 +11,7 @@ An automation module for Foundry VTT that streamlines combat damage application 
 - **Automatic Damage Application**: Calculates and applies fatigue damage automatically when attacks succeed
 - **Armor Reduction**: Automatically subtracts equipped armor's physical resistance from damage
 - **Void Reaction – Don't Defend**: Targets may spend a Void Point to willingly suffer a Critical Strike instead of defending
+- **Opportunity Critical Strike**: Attackers may spend 2 Opportunities from a successful attack to inflict a Critical Strike in addition to normal damage
 - **Critical Strike Mitigation**: Characters can roll Fitness to reduce the severity of incoming critical strikes
 - **Shattering Parry**: After rolling mitigation, characters may parry the blow with a readied weapon, rerolling all mitigation dice at the cost of that weapon gaining the Damaged quality
 - **Automatic Critical Resolution**: Critical strike severity is calculated automatically based on weapon deadliness and mitigation
@@ -115,6 +116,25 @@ If an attack targets a character who is already Incapacitated or has fatigue > e
 - Automatically apply the **critical effect**
 - Display the full calculation in chat
 
+### Opportunity Critical Strike
+
+When a successful attack roll includes **2 or more Opportunities**, the damage message displays a button allowing the attacker to spend those Opportunities to inflict a **Critical Strike** in addition to the normal damage already applied.
+
+To use this option:
+
+1. Make a successful attack roll with **2+ Opportunities kept**
+2. The damage message will show **"⚡ Spend 2 Opportunities — Critical Strike (N available)"**
+3. Click the button to confirm
+
+If confirmed:
+
+- Normal fatigue damage remains applied
+- A **Critical Strike** is triggered against the target using the weapon's Deadliness
+- The target must roll **Fitness (TN 1)** to mitigate the critical severity
+- The button becomes disabled after use — opportunities can only be spent once per attack
+
+> **Note:** Only the attacker's owner (or the GM) can click this button.
+
 ### Void Reaction – Don't Defend
 
 Targets may choose to **spend 1 Void Point** to willingly accept a **Critical Strike** instead of defending an attack.
@@ -199,6 +219,15 @@ Fatigue: 6 → 10 / 10
 Kakita Yoshi delivers a critical strike to Hida Kisada!
 Hida Kisada was already Incapacitated when struck!
 ⚠️ Roll for Critical Strike consequences!
+```
+
+### Opportunity Critical Strike
+
+```
+💥 Damage Applied
+Kakita Yoshi deals 3 damage to Hida Kisada
+Fatigue: 4 → 7 / 12
+[⚡ Spend 2 Opportunities — Critical Strike (2 available)]
 ```
 
 ### Shattering Parry
