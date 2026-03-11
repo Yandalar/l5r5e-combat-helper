@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-03-11
+
+### Added
+
+- Implemented **Opportunity-Based Critical Strike**.
+- When a successful attack roll includes **2 or more Opportunities**, the damage message now shows a button: **"⚡ Spend 2 Opportunities — Critical Strike"**.
+- Normal fatigue damage is applied as usual; the Critical Strike is an additional consequence.
+- Clicking the button triggers the full **Critical Strike workflow** using the attacking weapon's Deadliness, identical to the existing incapacitation-based critical path.
+- The button is only visible and clickable by the attacker's owner (or GM).
+- The button can only be used once per attack message.
+
+### Internal
+
+- Added `opportunity-critical.js` module handling button click registration, permission validation, and critical strike dispatch.
+- `attackData` flag now stores `weaponId`, `opportunities`, and `opportunityCriticalUsed` fields.
+- `createDamageMessage()` conditionally renders the opportunity button based on `attackData.opportunities >= 2`.
+- Damage messages now use `getCombatOwnership()` instead of `getTargetOwnership()`, granting OWNER permission to both the attacker's and target's owners so each can interact with their respective message buttons.
+- Added `getCombatOwnership()` helper to `chat-messages.js`.
+
+---
+
 ## [0.8.0] - 2026-03-09
 
 ### Added
