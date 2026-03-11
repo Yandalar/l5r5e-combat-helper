@@ -16,6 +16,7 @@ import { registerVoidDefenseHook } from "./void-defense.js";
 import { registerCriticalStrikeRollHandler } from "./critical-strike-roll.js";
 import { registerCriticalMitigationHandler } from "./critical-mitigation.js";
 import { registerShatteringParryHook } from "./shattering-parry.js";
+import { registerOpportunityCriticalHandler } from "./opportunity-critical.js";
 
 Hooks.once("init", () => {
   /**
@@ -63,6 +64,9 @@ registerShatteringParryHook();
 
 // Register critical strike roll button handler
 registerCriticalStrikeRollHandler();
+
+// Register opportunity-based critical strike button handler
+registerOpportunityCriticalHandler();
 
 Hooks.once("ready", () => {
   /**

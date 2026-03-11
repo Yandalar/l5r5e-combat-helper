@@ -106,12 +106,18 @@ export function registerCombatHandler() {
       const armorResistance = getArmorResistance(target);
       const finalDamage = Math.max(0, rawDamage - armorResistance);
 
+      const opportunities = l5rData.summary?.opportunity || 0;
+      const equippedWeapon = getEquippedWeapon(attacker);
+
       const attackData = {
         attackerId: attacker.id,
         targetId: target.id,
+        weaponId: equippedWeapon?.id || null,
         rawDamage,
         armorResistance,
         finalDamage,
+        opportunities,
+        opportunityCriticalUsed: false,
         timestamp: Date.now(),
         resolved: false,
       };

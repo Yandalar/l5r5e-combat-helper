@@ -73,6 +73,20 @@ export async function createDamageMessage(
     incapacitatedMessage = `<p class="incapacitated-warning">${i18n.localize("l5r5e-combat-helper.chat.damageApplied.incapacitated")}</p>`;
   }
 
+  // Show the opportunity critical button if the attacker rolled 2+ opportunities
+  let opportunityButton = "";
+  if ((attackData.opportunities || 0) >= 2) {
+    const buttonText = i18n.format(
+      "l5r5e-combat-helper.chat.opportunityCritical.button",
+      { opportunities: attackData.opportunities },
+    );
+    opportunityButton = `
+      <button class="opportunity-critical-button" data-action="opportunity-critical">
+        ${buttonText}
+      </button>
+    `;
+  }
+
   const title = i18n.localize("l5r5e-combat-helper.chat.damageApplied.title");
   const dealsTo = i18n.format(
     "l5r5e-combat-helper.chat.damageApplied.dealsTo",
@@ -98,6 +112,7 @@ export async function createDamageMessage(
       ${armorInfo}
       <p>${fatigueText}</p>
       ${incapacitatedMessage}
+      ${opportunityButton}
     </div>
   `;
 
@@ -109,7 +124,7 @@ export async function createDamageMessage(
         attackData,
       },
     },
-    ownership: getTargetOwnership(target),
+    ownership: getCombatOwnership(attacker, target),
   });
 }
 
@@ -367,6 +382,35 @@ function getTargetOwnership(target) {
 
   for (let user of game.users) {
     if (target.testUserPermission(user, "OWNER")) {
+      ownership[user.id] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+    }
+  }
+
+  return ownership;
+}
+
+/**
+ * Builds an ownership configuration object granting OWNER permission
+ * to users who own either the attacker or the target.
+ *
+ * Used for damage messages that contain both attacker-facing interactions
+ * (opportunity critical button) and target-facing interactions
+ * (Void Don't Defend context menu option).
+ *
+ * @param {Actor} attacker - The attacking actor
+ * @param {Actor} target - The target actor
+ * @returns {Object} Object mapping user IDs to permission levels.
+ */
+function getCombatOwnership(attacker, target) {
+  const ownership = {
+    default: CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED,
+  };
+
+  for (let user of game.users) {
+    if (
+      attacker.testUserPermission(user, "OWNER") ||
+      target.testUserPermission(user, "OWNER")
+    ) {
       ownership[user.id] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
     }
   }
