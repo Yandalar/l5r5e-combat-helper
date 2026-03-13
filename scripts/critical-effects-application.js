@@ -18,7 +18,11 @@
  * `critical-effects-table`.
  */
 
-import { getCriticalEffect, isWeaponSharp } from "./critical-effects-table.js";
+import {
+  getCriticalEffect,
+  isWeaponSharp,
+  getActiveScarConfig,
+} from "./critical-effects-table.js";
 
 /**
  * Reverses the conditions applied by a condition-type critical effect.
@@ -490,13 +494,20 @@ async function applyConditions(target, mechanicalEffect, ringUsed, weapon) {
  * @returns {Promise<void>}
  */
 async function applyPermanentScar(target, mechanicalEffect, ringUsed, weapon) {
-  const { conditions, scarChoices } = mechanicalEffect;
+  const { conditions } = mechanicalEffect;
 
   for (let condition of conditions) {
     await applyConditionToActor(target, condition, ringUsed);
   }
 
-  const availableScars = scarChoices[ringUsed] || [];
+  // Use the active scar config (custom if set by GM, otherwise fall back to
+  // the hardcoded scarChoices in the table entry).
+  const scarConfig = getActiveScarConfig();
+  const configuredItems = scarConfig.rings?.[ringUsed] || [];
+  const availableScars =
+    configuredItems.length > 0
+      ? configuredItems
+      : mechanicalEffect.scarChoices?.[ringUsed] || [];
 
   if (availableScars.length === 0) {
     ui.notifications.warn(
@@ -514,7 +525,12 @@ async function applyPermanentScar(target, mechanicalEffect, ringUsed, weapon) {
   );
 
   if (selectedScar) {
-    const createdItemId = await addScarToActor(target, selectedScar, ringUsed);
+    const createdItemId = await addScarToActor(
+      target,
+      selectedScar,
+      ringUsed,
+      scarConfig.compendium,
+    );
     // Store the id so Shattering Parry can remove it if triggered afterward.
     if (createdItemId) {
       await target.setFlag(
@@ -720,14 +736,19 @@ async function showScarSelectionDialog(target, ringUsed, scarChoices) {
  * @param {string} ringUsed The ring associated with the injury.
  * @returns {Promise<void>}
  */
-async function addScarToActor(target, scarName, ringUsed) {
+async function addScarToActor(target, scarName, ringUsed, compendiumKey) {
   try {
-    const pack = game.packs.get("l5r5e.core-peculiarities-adversities");
+    const rawKey = compendiumKey || "l5r5e.core-peculiarities-adversities";
+    const packKey = rawKey.startsWith("Compendium.")
+      ? rawKey.slice("Compendium.".length)
+      : rawKey;
+    const pack = game.packs.get(packKey);
 
     if (!pack) {
       ui.notifications.error(
-        game.i18n.localize(
+        game.i18n.format(
           "l5r5e-combat-helper.notifications.compendiumNotFound",
+          { compendium: packKey },
         ),
       );
       return null;
@@ -735,7 +756,11 @@ async function addScarToActor(target, scarName, ringUsed) {
 
     await pack.getIndex();
 
-    const scarEntry = pack.index.find((entry) => entry.name === scarName);
+    const scarEntry = pack.index.find(
+      (entry) =>
+        entry.name === scarName ||
+        entry.name.toLowerCase().startsWith(scarName.toLowerCase()),
+    );
 
     if (!scarEntry) {
       ui.notifications.warn(
@@ -764,7 +789,6 @@ async function addScarToActor(target, scarName, ringUsed) {
     itemData.system.ring = ringUsed;
 
     const created = await target.createEmbeddedDocuments("Item", [itemData]);
-    // Return the id of the newly created embedded item so callers can store it
     return created?.[0]?.id || null;
   } catch (error) {
     console.error("Error adding scar to actor:", error);

@@ -1,57 +1,22 @@
 /**
  * Critical Effects Table for L5R5e
  *
- * Defines the possible results of a Critical Strike based on the final
- * calculated severity after mitigation. Each entry represents a severity
- * range and describes the narrative and mechanical effects that must be
- * applied to the target.
- *
- * Based on: "Table 6–6: Critical Strike Results by Severity"
- *
- * Each table entry contains:
- * - Severity range (minSeverity / maxSeverity)
- * - Effect key for localization
- * - Mechanical instructions used by the module to apply conditions,
- *   armor damage, scars, or death.
+ * The critical effects table is fixed. The GM may configure which compendium
+ * items are used for permanent scars via Module Settings → "Configure Scars".
  */
 
 /**
- * Critical Effects Table (Raw Data)
- *
- * The system will search this table to determine which effect applies
- * based on the final severity value produced by a critical strike.
- *
- * Structure of each entry:
- * {
- *   minSeverity: number,
- *   maxSeverity: number,
- *   nameKey: string,        // Localization key for effect name
- *   effectKey: string,      // Localization key for effect description
- *   mechanicalEffect: {
- *     type: string,
- *     ...additional fields depending on type
- *   }
- * }
- *
- * Supported mechanicalEffect types:
- * - "armor_damaged"
- * - "condition"
- * - "permanent_scar"
- * - "dying"
- * - "instant_death"
- *
+ * Default Critical Effects Table.
+ * Exported for use by CustomCriticalConfig (reset) and getCriticalEffect (fallback).
  * @type {Array<Object>}
  */
-const CRITICAL_EFFECTS_TABLE_RAW = [
+export const DEFAULT_CRITICAL_TABLE = [
   {
     minSeverity: 0,
     maxSeverity: 2,
     nameKey: "closeCall",
     effectKey: "closeCallEffect",
-    mechanicalEffect: {
-      type: "armor_damaged",
-      armorDamaged: true,
-    },
+    mechanicalEffect: { type: "armor_damaged", armorDamaged: true },
   },
   {
     minSeverity: 3,
@@ -62,10 +27,7 @@ const CRITICAL_EFFECTS_TABLE_RAW = [
       type: "condition",
       conditions: ["lightly_wounded"],
       conditionalConditions: [
-        {
-          condition: "weapon_sharp",
-          applies: ["bleeding"],
-        },
+        { condition: "weapon_sharp", applies: ["bleeding"] },
       ],
     },
   },
@@ -78,10 +40,7 @@ const CRITICAL_EFFECTS_TABLE_RAW = [
       type: "condition",
       conditions: ["severely_wounded"],
       conditionalConditions: [
-        {
-          condition: "weapon_sharp",
-          applies: ["bleeding"],
-        },
+        { condition: "weapon_sharp", applies: ["bleeding"] },
       ],
     },
   },
@@ -146,73 +105,78 @@ const CRITICAL_EFFECTS_TABLE_RAW = [
     maxSeverity: 999,
     nameKey: "instantDeath",
     effectKey: "instantDeathEffect",
-    mechanicalEffect: {
-      type: "instant_death",
-      conditions: ["dead"],
-    },
+    mechanicalEffect: { type: "instant_death", conditions: ["dead"] },
   },
 ];
 
 /**
- * Retrieves the appropriate critical effect entry based on severity.
+ * Default scar configuration.
+ * rings values are empty — scar item names come from scarChoices in each
+ * DEFAULT_CRITICAL_TABLE entry. When the GM customizes this, the per-ring
+ * lists here REPLACE the scarChoices in all permanent_scar entries.
+ * @type {{ compendium: string, rings: Object<string, string[]> }}
+ */
+export const DEFAULT_SCAR_CONFIG = {
+  compendium: "l5r5e.core-peculiarities-adversities",
+  rings: {
+    air: [],
+    earth: [],
+    fire: [],
+    water: [],
+    void: [],
+  },
+};
+
+/**
+ * Returns the active critical table (custom or default).
+ * @returns {Array<Object>}
+ */
+/**
+ * Returns the active scar config (custom or default).
+ * @returns {{ compendium: string, rings: Object<string, string[]> }}
+ */
+export function getActiveScarConfig() {
+  const custom = game.settings.get("l5r5e-combat-helper", "customScarConfig");
+  return custom || DEFAULT_SCAR_CONFIG;
+}
+
+/**
+ * Retrieves the critical effect entry for a given severity from the default
+ * table, with localized name and effect strings.
  *
- * The function iterates through the CRITICAL_EFFECTS_TABLE_RAW and returns
- * the first entry whose severity range includes the provided value.
- * The returned object includes localized name and effect description.
- *
- * If the severity exceeds all defined ranges, the final table entry
- * (Instant Death) is returned as a fallback.
- *
- * @param {number} severity Final calculated severity after mitigation rolls.
- * @returns {Object} The critical effect table entry with localized name and effect.
+ * @param {number} severity
+ * @returns {Object}
  */
 export function getCriticalEffect(severity) {
   const i18n = game.i18n;
 
-  for (let effect of CRITICAL_EFFECTS_TABLE_RAW) {
-    if (severity >= effect.minSeverity && severity <= effect.maxSeverity) {
-      return {
-        ...effect,
-        name: i18n.localize(
-          `l5r5e-combat-helper.criticalEffects.${effect.nameKey}`,
-        ),
-        effect: i18n.localize(
-          `l5r5e-combat-helper.criticalEffects.${effect.effectKey}`,
-        ),
-      };
+  const resolve = (entry) => ({
+    ...entry,
+    name: i18n.localize(`l5r5e-combat-helper.criticalEffects.${entry.nameKey}`),
+    effect: i18n.localize(
+      `l5r5e-combat-helper.criticalEffects.${entry.effectKey}`,
+    ),
+  });
+
+  for (const entry of DEFAULT_CRITICAL_TABLE) {
+    if (severity >= entry.minSeverity && severity <= entry.maxSeverity) {
+      return resolve(entry);
     }
   }
 
-  const fallback =
-    CRITICAL_EFFECTS_TABLE_RAW[CRITICAL_EFFECTS_TABLE_RAW.length - 1];
-  return {
-    ...fallback,
-    name: i18n.localize(
-      `l5r5e-combat-helper.criticalEffects.${fallback.nameKey}`,
-    ),
-    effect: i18n.localize(
-      `l5r5e-combat-helper.criticalEffects.${fallback.effectKey}`,
-    ),
-  };
+  return resolve(DEFAULT_CRITICAL_TABLE[DEFAULT_CRITICAL_TABLE.length - 1]);
 }
 
 /**
  * Determines whether a weapon has the Razor-Edged (Sharp) quality.
  *
- * Certain critical effects apply additional conditions (such as Bleeding)
- * if the attacking weapon possesses the Razor-Edged property. This helper
- * inspects the weapon's property list to determine whether that quality
- * is present.
- *
- * @param {Item|null} weapon The weapon used in the attack.
- * @returns {boolean} True if the weapon has the Razor-Edged property.
+ * @param {Item|null} weapon
+ * @returns {boolean}
  */
 export function isWeaponSharp(weapon) {
   if (!weapon) return false;
-
   const properties = weapon.system?.properties;
   if (!Array.isArray(properties)) return false;
-
   return properties.some(
     (prop) =>
       prop.name?.toLowerCase() === "razor-edged" ||

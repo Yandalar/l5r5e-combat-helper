@@ -1,0 +1,261 @@
+/* Force dark background on the entire dialog */
+.l5r5e-critical-config-dialog,
+.l5r5e-critical-config-dialog .window-content,
+.l5r5e-critical-config-dialog .dialog-content {
+  background: #1e1c1a !important;
+  color: #d4c9b0 !important;
+}
+
+/* Fix dialog layout */
+.l5r5e-critical-config-dialog .window-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.l5r5e-critical-config-dialog .dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 !important;
+  min-height: 0;
+}
+
+/* Fix Save/Cancel buttons */
+.l5r5e-critical-config-dialog .dialog-buttons {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 14px !important;
+  border-top: 1px solid #3a3530;
+  background: #1a1815 !important;
+  min-height: unset !important;
+  height: auto !important;
+}
+
+.l5r5e-critical-config-dialog .dialog-buttons button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: unset !important;
+  padding: 5px 20px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+}
+
+.l5r5e-critical-config-dialog .dialog-buttons button[data-button="save"] {
+  background: rgba(80, 140, 60, 0.35) !important;
+  border: 1px solid rgba(80, 140, 60, 0.7) !important;
+  color: #90c870 !important;
+}
+
+.l5r5e-critical-config-dialog .dialog-buttons button[data-button="save"]:hover {
+  background: rgba(80, 140, 60, 0.55) !important;
+}
+
+.l5r5e-critical-config-dialog .dialog-buttons button[data-button="cancel"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid #555 !important;
+  color: #bbb !important;
+}
+
+.l5r5e-critical-config-dialog
+  .dialog-buttons
+  button[data-button="cancel"]:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Main container */
+.l5r5e-critical-config {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 8px;
+  gap: 12px;
+  font-size: 13px;
+  color: #d4c9b0;
+  background: transparent;
+}
+
+.l5r5e-critical-config .config-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #8a8070 !important;
+  font-style: italic;
+}
+
+/* Compendium input group */
+.l5r5e-critical-config .compendium-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.l5r5e-critical-config .compendium-group > label {
+  font-size: 12px !important;
+  font-weight: bold;
+  color: #b0a898 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.l5r5e-critical-config .notes {
+  margin: 0;
+  font-size: 11px;
+  color: #6a6058 !important;
+  font-style: italic;
+}
+
+/* All inputs — force dark theme */
+.l5r5e-critical-config input[type="text"] {
+  background: #2a2520 !important;
+  border: 1px solid #4a4540 !important;
+  border-radius: 3px !important;
+  color: #d4c9b0 !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  box-sizing: border-box;
+  box-shadow: none !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+}
+
+.l5r5e-critical-config input[type="text"]:focus {
+  border-color: #c8631a !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px rgba(200, 99, 26, 0.25) !important;
+}
+
+.l5r5e-critical-config input::placeholder {
+  color: #5a5248 !important;
+  opacity: 1 !important;
+}
+
+/* Ring sections grid */
+.l5r5e-critical-config .scars-rings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.l5r5e-critical-config .ring-section {
+  background: #252220 !important;
+  border: 1px solid #3a3530 !important;
+  border-radius: 5px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.l5r5e-critical-config .ring-header {
+  font-family: inherit !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  color: #c8631a !important;
+  margin: 0 0 4px 0 !important;
+  padding: 0 0 5px 0 !important;
+  border-bottom: 1px solid #3a3530 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.2 !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+
+.l5r5e-critical-config .scar-item-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.l5r5e-critical-config .scar-item-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.l5r5e-critical-config .scar-item-input {
+  flex: 1 !important;
+  min-width: 0;
+  width: 100% !important;
+}
+
+.l5r5e-critical-config .remove-scar-item {
+  flex-shrink: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  padding: 2px 5px !important;
+  color: #5a5248 !important;
+  font-size: 11px !important;
+  border-radius: 2px !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: unset !important;
+  line-height: 1;
+}
+
+.l5r5e-critical-config .remove-scar-item:hover {
+  color: #cc5544 !important;
+  background: rgba(200, 80, 60, 0.15) !important;
+}
+
+.l5r5e-critical-config .add-scar-btn {
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid #3a3530 !important;
+  border-radius: 3px !important;
+  color: #8a8070 !important;
+  cursor: pointer;
+  width: 100% !important;
+  line-height: 1.5 !important;
+  height: auto !important;
+  min-height: unset !important;
+  box-shadow: none !important;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.l5r5e-critical-config .add-scar-btn:hover {
+  background: rgba(200, 99, 26, 0.15) !important;
+  color: #c8631a !important;
+  border-color: #c8631a !important;
+}
+
+/* Actions footer */
+.l5r5e-critical-config .config-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.l5r5e-critical-config .reset-btn {
+  font-size: 11px !important;
+  padding: 4px 12px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid #3a3530 !important;
+  border-radius: 3px !important;
+  color: #6a6058 !important;
+  cursor: pointer;
+  height: auto !important;
+  min-height: unset !important;
+  width: auto !important;
+  box-shadow: none !important;
+  line-height: 1.5 !important;
+}
+
+.l5r5e-critical-config .reset-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #b0a898 !important;
+  border-color: #5a5248 !important;
+}
