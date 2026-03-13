@@ -17,8 +17,22 @@ import { registerCriticalStrikeRollHandler } from "./critical-strike-roll.js";
 import { registerCriticalMitigationHandler } from "./critical-mitigation.js";
 import { registerShatteringParryHook } from "./shattering-parry.js";
 import { registerOpportunityCriticalHandler } from "./opportunity-critical.js";
+import { CustomCriticalConfig } from "./custom-critical-config.js";
 
 Hooks.once("init", () => {
+  // Register custom Handlebars helpers used by module templates
+  Handlebars.registerHelper("join", (array, separator) => {
+    if (!Array.isArray(array)) return "";
+    return array.join(typeof separator === "string" ? separator : ", ");
+  });
+
+  Handlebars.registerHelper("or", (a, b) => a || b);
+
+  Handlebars.registerHelper("concat", (...args) => {
+    // Last arg is the Handlebars options object — exclude it
+    return args.slice(0, -1).join("");
+  });
+
   /**
    * Primary module enable/disable switch.
    *
@@ -52,6 +66,48 @@ Hooks.once("init", () => {
     config: true,
     type: Boolean,
     default: true,
+  });
+
+  /**
+   * Stores the GM-defined scar compendium and per-ring item name lists.
+   * null means "use the hardcoded default".
+   * config: false — managed via CustomCriticalConfig window.
+   */
+  game.settings.register("l5r5e-combat-helper", "customScarConfig", {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: null,
+  });
+
+  /**
+   * Wrapper that Foundry's registerMenu can instantiate.
+   * Extends FormApplication so Foundry recognises it as a valid menu type,
+   * but immediately delegates to our Dialog-based config on render.
+   */
+  class CriticalConfigOpener extends FormApplication {
+    static get defaultOptions() {
+      return foundry.utils.mergeObject(super.defaultOptions, { title: "" });
+    }
+    async _updateObject() {}
+    async render() {
+      CustomCriticalConfig.open();
+    }
+  }
+
+  game.settings.registerMenu("l5r5e-combat-helper", "openCriticalConfig", {
+    name: game.i18n.localize(
+      "l5r5e-combat-helper.settings.criticalConfig.name",
+    ),
+    hint: game.i18n.localize(
+      "l5r5e-combat-helper.settings.criticalConfig.hint",
+    ),
+    label: game.i18n.localize(
+      "l5r5e-combat-helper.settings.criticalConfig.button",
+    ),
+    icon: "fas fa-skull-crossbones",
+    type: CriticalConfigOpener,
+    restricted: true,
   });
 });
 
