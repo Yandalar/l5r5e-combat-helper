@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Void "Don't Defend" Reaction System
  *
@@ -19,9 +20,9 @@ import {
   spendVoidPoint,
   revertFatigueDamage,
   isIncapacitated,
-} from "./actor-utils.js";
-import { createVoidCriticalStrikeMessage } from "./chat-messages.js";
-import { confirmDialog } from "./compat-utils.js";
+} from "../core/actor-utils";
+import { createVoidCriticalStrikeMessage } from "../ui/chat-messages";
+import { confirmDialog } from "../core/compat-utils";
 
 /**
  * Registers the hook responsible for extending the chat message

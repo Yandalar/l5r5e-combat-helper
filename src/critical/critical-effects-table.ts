@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Critical Effects Table for L5R5e
  *

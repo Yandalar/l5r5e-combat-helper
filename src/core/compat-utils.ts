@@ -1,3 +1,4 @@
+// @ts-nocheck
 export async function confirmDialog({ title, content, defaultYes = false }) {
   if (foundry.applications?.api?.DialogV2) {
     return (await foundry.applications.api.DialogV2.confirm({

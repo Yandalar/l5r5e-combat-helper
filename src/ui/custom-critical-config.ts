@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Custom Critical Configuration
  *
@@ -7,8 +8,8 @@
  * The critical effects table itself is not configurable — only the scar items.
  */
 
-import { DEFAULT_SCAR_CONFIG } from "./critical-effects-table.js";
-import { confirmDialog } from "./compat-utils.js";
+import { DEFAULT_SCAR_CONFIG } from "../critical/critical-effects-table";
+import { confirmDialog } from "../core/compat-utils";
 
 export class CustomCriticalConfig {
   static async open() {

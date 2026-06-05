@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Critical Strike Mitigation Roll Handler
  *
@@ -15,7 +16,7 @@
  * 7. Update the original critical strike message to mark it resolved
  */
 
-import { applyCriticalEffect } from "./critical-effects-application.js";
+import { applyCriticalEffect } from "./critical-effects-application";
 
 /**
  * Registers the hook that listens for completed mitigation rolls.

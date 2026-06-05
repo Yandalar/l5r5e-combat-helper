@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * L5R5e Combat Helper
  * Main module bootstrap and lifecycle orchestration.
@@ -11,28 +12,19 @@
  * - Activate combat processing logic once the game is fully ready
  */
 
-import { registerCombatHandler } from "./combat-handler.js";
-import { registerVoidDefenseHook } from "./void-defense.js";
-import { registerCriticalStrikeRollHandler } from "./critical-strike-roll.js";
-import { registerCriticalMitigationHandler } from "./critical-mitigation.js";
-import { registerShatteringParryHook } from "./shattering-parry.js";
-import { registerOpportunityCriticalHandler } from "./opportunity-critical.js";
-import { CustomCriticalConfig } from "./custom-critical-config.js";
-import { registerTargetAssignmentMenu } from "./target-assignment.js";
+import { registerCombatHandler } from "./combat-handler";
+import { registerVoidDefenseHook } from "./reactions/void-defense";
+import { registerCriticalStrikeRollHandler } from "./critical/critical-strike-roll";
+import { registerCriticalMitigationHandler } from "./critical/critical-mitigation";
+import { registerShatteringParryHook } from "./reactions/shattering-parry";
+import { registerOpportunityCriticalHandler } from "./reactions/opportunity-critical";
+import { CustomCriticalConfig } from "./ui/custom-critical-config";
+import { registerTargetAssignmentMenu } from "./target-assignment";
+import { registerHandlebarsHelpers } from "./helpers/handlebars";
 
 Hooks.once("init", () => {
   // Register custom Handlebars helpers used by module templates
-  Handlebars.registerHelper("join", (array, separator) => {
-    if (!Array.isArray(array)) return "";
-    return array.join(typeof separator === "string" ? separator : ", ");
-  });
-
-  Handlebars.registerHelper("or", (a, b) => a || b);
-
-  Handlebars.registerHelper("concat", (...args) => {
-    // Last arg is the Handlebars options object — exclude it
-    return args.slice(0, -1).join("");
-  });
+  registerHandlebarsHelpers();
 
   /**
    * Primary module enable/disable switch.

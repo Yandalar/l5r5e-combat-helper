@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Critical Effects Application
  *
@@ -22,7 +23,7 @@ import {
   getCriticalEffect,
   isWeaponSharp,
   getActiveScarConfig,
-} from "./critical-effects-table.js";
+} from "./critical-effects-table";
 
 /**
  * Reverses the conditions applied by a condition-type critical effect.
@@ -879,7 +880,7 @@ async function createCriticalEffectMessage(
     <div class="l5r5e-combat-helper critical-effect-result">
       <h3>${title}</h3>
       <p>${strikes}</p>
-      
+
       <div class="critical-info">
         <p>${weaponText}</p>
         <p>${severityText}</p>

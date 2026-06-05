@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Opportunity-Based Critical Strike Handler
  *
@@ -14,7 +15,7 @@
  *   mitigation roll, reusing the existing critical strike infrastructure.
  */
 
-import { createCriticalStrikeMessage } from "./chat-messages.js";
+import { createCriticalStrikeMessage } from "../ui/chat-messages";
 
 /**
  * Registers the renderChatMessage hook that attaches click listeners
