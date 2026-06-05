@@ -66,7 +66,12 @@ export function checkAttackSuccess(l5rData) {
 export function calculateDamage(l5rData, attacker) {
   let baseDamage = 0;
 
-  if (attacker.items) {
+  const rollWeapon =
+    l5rData.item?.type === "weapon" ? l5rData.item : null;
+
+  if (rollWeapon) {
+    baseDamage = parseInt(rollWeapon.system?.damage) || 0;
+  } else if (attacker.items) {
     const equippedWeapons = attacker.items.filter(
       (item) =>
         item.type === "weapon" &&
