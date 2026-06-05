@@ -18,6 +18,7 @@ import { registerCriticalMitigationHandler } from "./critical-mitigation.js";
 import { registerShatteringParryHook } from "./shattering-parry.js";
 import { registerOpportunityCriticalHandler } from "./opportunity-critical.js";
 import { CustomCriticalConfig } from "./custom-critical-config.js";
+import { registerTargetAssignmentMenu } from "./target-assignment.js";
 
 Hooks.once("init", () => {
   // Register custom Handlebars helpers used by module templates
@@ -117,6 +118,9 @@ registerVoidDefenseHook();
 
 // Register Shattering Parry context menu hook
 registerShatteringParryHook();
+
+// Register target assignment context menu hook
+registerTargetAssignmentMenu();
 
 // Register critical strike roll button handler
 registerCriticalStrikeRollHandler();

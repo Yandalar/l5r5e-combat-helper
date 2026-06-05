@@ -81,6 +81,9 @@ export function registerCombatHandler() {
       } else {
         const targets = Array.from(game.user.targets);
         if (targets.length === 0) {
+          await message.setFlag("l5r5e-combat-helper", "pendingTarget", {
+            attackerId: attacker.id,
+          });
           ui.notifications.warn(
             game.i18n.localize("l5r5e-combat-helper.notifications.noTargets"),
           );
@@ -91,51 +94,68 @@ export function registerCombatHandler() {
 
       if (!target) return;
 
-      const wasCritical = isAtCriticalState(target);
-
-      if (wasCritical) {
-        const weapon = getEquippedWeapon(attacker);
-        await createCriticalStrikeMessage(target, attacker, weapon);
-        return;
-      }
-
-      const success = checkAttackSuccess(l5rData);
-      if (!success) return;
-
-      const rawDamage = calculateDamage(l5rData, attacker);
-      const armorResistance = getArmorResistance(target);
-      const finalDamage = Math.max(0, rawDamage - armorResistance);
-
-      const opportunities = l5rData.summary?.opportunity || 0;
-      const equippedWeapon = getEquippedWeapon(attacker);
-
-      const attackData = {
-        attackerId: attacker.id,
-        targetId: target.id,
-        weaponId: equippedWeapon?.id || null,
-        rawDamage,
-        armorResistance,
-        finalDamage,
-        opportunities,
-        opportunityCriticalUsed: false,
-        timestamp: Date.now(),
-        resolved: false,
-      };
-
-      await message.setFlag("l5r5e-combat-helper", "attackData", attackData);
-
-      await applyDamage(
-        target,
-        finalDamage,
-        attacker,
-        rawDamage,
-        armorResistance,
-        attackData,
-      );
+      await processAttack(message, attacker, target, l5rData);
     } catch (error) {
       console.error("L5R5e Combat Helper | Error:", error);
     }
   });
+}
+
+/**
+ * Resolves an attack roll against a specific target.
+ *
+ * Shared by the automatic `createChatMessage` hook and the GM's
+ * retroactive target assignment flow.
+ *
+ * @param {ChatMessage} rollMessage - The attack roll chat message
+ * @param {Actor} attacker - Actor performing the attack
+ * @param {Actor} target - Actor receiving the attack
+ * @param {Object} l5rData - L5R5e roll data from message.rolls[0].l5r5e
+ * @returns {Promise<void>}
+ */
+export async function processAttack(rollMessage, attacker, target, l5rData) {
+  const wasCritical = isAtCriticalState(target);
+
+  if (wasCritical) {
+    const weapon = getEquippedWeapon(attacker);
+    await createCriticalStrikeMessage(target, attacker, weapon);
+    return;
+  }
+
+  const success = checkAttackSuccess(l5rData);
+  if (!success) return;
+
+  const rawDamage = calculateDamage(l5rData, attacker);
+  const armorResistance = getArmorResistance(target);
+  const finalDamage = Math.max(0, rawDamage - armorResistance);
+
+  const opportunities = l5rData.summary?.opportunity || 0;
+  const equippedWeapon = getEquippedWeapon(attacker);
+
+  const attackData = {
+    attackerId: attacker.id,
+    targetId: target.id,
+    weaponId: equippedWeapon?.id || null,
+    rawDamage,
+    armorResistance,
+    finalDamage,
+    opportunities,
+    opportunityCriticalUsed: false,
+    timestamp: Date.now(),
+    resolved: false,
+    rollMessageId: rollMessage.id,
+  };
+
+  await rollMessage.setFlag("l5r5e-combat-helper", "attackData", attackData);
+
+  await applyDamage(
+    target,
+    finalDamage,
+    attacker,
+    rawDamage,
+    armorResistance,
+    attackData,
+  );
 }
 
 /**

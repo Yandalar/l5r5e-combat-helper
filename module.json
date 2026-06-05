@@ -30,6 +30,7 @@
     "scripts/opportunity-critical.js",
     "scripts/custom-critical-config.js",
     "scripts/combat-handler.js",
+    "scripts/target-assignment.js",
     "scripts/main.js"
   ],
   "styles": [

@@ -172,5 +172,12 @@
   "l5r5e-combat-helper.config.resetScars.confirm": "This will restore the default compendium and clear all custom ring mappings. Are you sure?",
   "l5r5e-combat-helper.config.error.severityRange": "Entry {index}: Min severity cannot be greater than Max severity.",
   "l5r5e-combat-helper.config.error.missingName": "Entry {index}: Name cannot be empty.",
-  "l5r5e-combat-helper.config.error.missingCompendium": "Compendium field cannot be empty."
+  "l5r5e-combat-helper.config.error.missingCompendium": "Compendium field cannot be empty.",
+  "l5r5e-combat-helper.contextMenu.assignTarget": "Assign Target",
+  "l5r5e-combat-helper.dialog.assignTarget.title": "Assign Attack Target",
+  "l5r5e-combat-helper.dialog.assignTarget.contentSimple": "<p>Assign <strong>{newTarget}</strong> as target for <strong>{attacker}</strong>'s attack?</p><p>Estimated damage: <strong>{finalDamage}</strong> fatigue (base {rawDamage}, armor {armor}).</p>",
+  "l5r5e-combat-helper.dialog.assignTarget.contentReassign": "<p>Reassign <strong>{attacker}</strong>'s attack to <strong>{newTarget}</strong>.</p><ul><li><strong>{revertDamage}</strong> fatigue will be reverted from <strong>{oldTarget}</strong>.</li><li><strong>{finalDamage}</strong> fatigue will be applied to <strong>{newTarget}</strong> (base {rawDamage}, armor {armor}).</li></ul><p>Continue?</p>",
+  "l5r5e-combat-helper.notifications.assignTarget.noTarget": "No token targeted. Select a target token on the canvas first.",
+  "l5r5e-combat-helper.notifications.assignTarget.noAttacker": "Could not resolve the attacker for this roll.",
+  "l5r5e-combat-helper.notifications.assignTarget.error": "Error during target assignment: {error}"
 }

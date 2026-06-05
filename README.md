@@ -19,6 +19,7 @@ An automation module for Foundry VTT that streamlines combat damage application 
 - **Smart Weapon Detection**: Automatically finds equipped/readied weapons and uses their damage values
 - **Bonus Success Calculation**: Adds additional successes beyond TN as bonus damage
 - **Rich Chat Messages**: Informative chat cards showing attack, damage, and critical calculations
+- **GM Target Assignment**: The GM can retroactively assign or reassign the target of any attack roll — useful when a player forgot to select a target or the wrong token was targeted
 
 ## Installation
 
@@ -182,6 +183,31 @@ If confirmed:
 - Effects that cannot be automatically reversed (armor damage from a Close Call, instant death) will show a **GM notification** for manual review
 
 > **Note:** Shattering Parry can only be used once per mitigation result message. The option disappears from the context menu after it has been triggered.
+
+### GM Target Assignment
+
+The GM can assign or reassign the target of any finished martial attack roll directly from the chat log. This is useful when:
+
+- A player forgot to select a target before rolling
+- The wrong token was targeted and damage was already applied
+
+To use this feature:
+
+1. **Target a token** on the canvas (the new intended target)
+2. **Right-click the attack roll message** in the chat log
+3. Select **"Assign Target"** (GM-only option)
+4. Review the confirmation dialog:
+   - **First assignment**: Shows the estimated damage that will be applied to the new target
+   - **Reassignment**: Shows how much fatigue will be reverted from the original target and how much will be applied to the new one
+5. Confirm to apply
+
+If reassigning after damage was already applied:
+
+- The previous target's fatigue is **automatically reverted** to its pre-attack value
+- The prior damage message is **deleted from the chat log**
+- Damage is then calculated and applied to the **new target**
+
+> **Note:** This option is only visible to the GM and only appears on finished martial attack roll messages (melee, ranged, or unarmed skills with a completed roll).
 
 ## Chat Message Examples
 
