@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Actor Data Utilities
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Critical Strike Roll Handler
  *

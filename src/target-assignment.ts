@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GM Target Assignment
  *
@@ -16,14 +17,14 @@
  * 5. On confirm: prior fatigue is reverted, new damage is processed.
  */
 
-import { resolveMessageId, confirmDialog } from "./compat-utils.js";
-import { revertFatigueDamage } from "./actor-utils.js";
+import { resolveMessageId, confirmDialog } from "./core/compat-utils";
+import { revertFatigueDamage } from "./core/actor-utils";
 import {
   checkAttackSuccess,
   calculateDamage,
   getArmorResistance,
-} from "./damage-calculator.js";
-import { processAttack } from "./combat-handler.js";
+} from "./core/damage-calculator";
+import { processAttack } from "./combat-handler";
 
 /**
  * Registers the context menu hook that injects the "Asignar Target"

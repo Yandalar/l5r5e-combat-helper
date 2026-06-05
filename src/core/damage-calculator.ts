@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Damage Resolution Utilities
  *

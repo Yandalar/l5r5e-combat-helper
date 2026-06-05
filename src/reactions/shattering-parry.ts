@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shattering Parry System
  *
@@ -18,8 +19,8 @@
  *    mark the session flag as used, and launch a new mitigation roll.
  */
 
-import { reverseCriticalEffect } from "./critical-effects-application.js";
-import { confirmDialog, resolveMessageId } from "./compat-utils.js";
+import { reverseCriticalEffect } from "../critical/critical-effects-application";
+import { confirmDialog, resolveMessageId } from "../core/compat-utils";
 
 /**
  * Registers the context menu hook that injects the Shattering Parry option

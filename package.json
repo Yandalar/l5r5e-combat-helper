@@ -1,0 +1,18 @@
+{
+  "name": "l5r5e-combat-helper",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"vite build --watch\" \"browser-sync start --proxy localhost:30000 --files 'dist/bundle.js' --no-open --no-ghost-mode --ws\"",
+    "build": "vite build",
+    "link:mac": "ln -sfn \"${PWD}\" \"${HOME}/Library/Application Support/FoundryVTT/Data/modules/l5r5e-combat-helper\"",
+    "link:linux": "ln -sfn \"${PWD}\" \"${HOME}/.local/share/FoundryVTT/Data/modules/l5r5e-combat-helper\""
+  },
+  "devDependencies": {
+    "@league-of-foundry-developers/foundry-vtt-types": "latest",
+    "browser-sync": "^3.0.0",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}

@@ -11,3 +11,4 @@ Thumbs.db
 # Build files
 *.zip
 node_modules/
+dist/

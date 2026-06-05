@@ -17,21 +17,7 @@
     }
   ],
   "esmodules": [
-    "scripts/compat-utils.js",
-    "scripts/actor-utils.js",
-    "scripts/damage-calculator.js",
-    "scripts/chat-messages.js",
-    "scripts/critical-mitigation.js",
-    "scripts/critical-effects-table.js",
-    "scripts/critical-effects-application.js",
-    "scripts/critical-strike-roll.js",
-    "scripts/void-defense.js",
-    "scripts/shattering-parry.js",
-    "scripts/opportunity-critical.js",
-    "scripts/custom-critical-config.js",
-    "scripts/combat-handler.js",
-    "scripts/target-assignment.js",
-    "scripts/main.js"
+    "dist/bundle.js"
   ],
   "styles": [
     "styles/module.css",

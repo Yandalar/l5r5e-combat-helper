@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Combat roll interception and automatic damage resolution.
  *
@@ -17,17 +18,17 @@ import {
   getCurrentFatigue,
   getEndurance,
   isAtCriticalState,
-} from "./actor-utils.js";
+} from "./core/actor-utils";
 import {
   checkAttackSuccess,
   calculateDamage,
   getArmorResistance,
-} from "./damage-calculator.js";
+} from "./core/damage-calculator";
 import {
   createDamageMessage,
   createArmorBlockedMessage,
   createCriticalStrikeMessage,
-} from "./chat-messages.js";
+} from "./ui/chat-messages";
 
 /**
  * Registers the main combat handler hook.
