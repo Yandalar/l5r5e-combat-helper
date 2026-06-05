@@ -707,8 +707,9 @@ async function showScarSelectionDialog(target, ringUsed, scarChoices) {
             "l5r5e-combat-helper.dialog.scarSelection.confirm",
           ),
           callback: (html) => {
-            const selected = html.find("#scar-choice").val();
-            resolve(selected);
+            const el = html instanceof HTMLElement ? html : html[0];
+            const selected = el.querySelector("#scar-choice")?.value;
+            resolve(selected || null);
           },
         },
         cancel: {

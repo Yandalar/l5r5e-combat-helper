@@ -2,7 +2,7 @@
 
 An automation module for Foundry VTT that streamlines combat damage application in Legend of the Five Rings 5th Edition.
 
-![Foundry Version](https://img.shields.io/badge/Foundry-v11+-green)
+![Foundry Version](https://img.shields.io/badge/Foundry-v11--v14-green)
 ![System](https://img.shields.io/badge/System-L5R5e-red)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -242,7 +242,7 @@ Previous critical effects have been reversed.
 
 ## Requirements
 
-- **Foundry VTT**: Version 11 or higher
+- **Foundry VTT**: Version 11–14
 - **Game System**: Legend of the Five Rings 5th Edition (l5r5e)
 - **Permissions**: GM user required for automatic damage application
 
@@ -251,7 +251,7 @@ Previous critical effects have been reversed.
 ### Known Compatible
 
 - L5R5e System v1.13.3+
-- Foundry VTT v11, v12, v13
+- Foundry VTT v11, v12, v13, v14
 
 ### Data Structure Requirements
 

@@ -24,9 +24,12 @@ import { createCriticalStrikeMessage } from "./chat-messages.js";
  */
 export function registerOpportunityCriticalHandler() {
   Hooks.on("renderChatMessage", (message, html) => {
-    html.find(".opportunity-critical-button").click(async (event) => {
-      event.preventDefault();
-      await handleOpportunityCriticalClick(message, event.currentTarget);
+    const el = html instanceof HTMLElement ? html : html[0];
+    el.querySelectorAll(".opportunity-critical-button").forEach((btn) => {
+      btn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await handleOpportunityCriticalClick(message, event.currentTarget);
+      });
     });
   });
 }

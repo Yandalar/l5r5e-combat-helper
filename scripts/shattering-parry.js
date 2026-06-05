@@ -19,6 +19,7 @@
  */
 
 import { reverseCriticalEffect } from "./critical-effects-application.js";
+import { confirmDialog } from "./compat-utils.js";
 
 /**
  * Registers the context menu hook that injects the Shattering Parry option
@@ -111,7 +112,7 @@ function addShatteringParryOption(html, options) {
         return;
       }
 
-      const confirmed = await Dialog.confirm({
+      const confirmed = await confirmDialog({
         title: game.i18n.localize(
           "l5r5e-combat-helper.dialog.shatteringParry.title",
         ),
@@ -122,9 +123,6 @@ function addShatteringParryOption(html, options) {
             weapon: weapon.name,
           },
         ),
-        yes: () => true,
-        no: () => false,
-        defaultYes: false,
       });
 
       if (!confirmed) return;
@@ -360,7 +358,7 @@ async function createShatteringParryMessage(target, weapon, parryData) {
 function resolveMessageId(li) {
   if (li instanceof HTMLElement) {
     return li.dataset.messageId || li.getAttribute("data-message-id");
-  } else if (li?.jquery || li instanceof jQuery) {
+  } else if (li?.jquery || (typeof jQuery !== "undefined" && li instanceof jQuery)) {
     return li.data("messageId") || li.attr("data-message-id");
   }
   return (

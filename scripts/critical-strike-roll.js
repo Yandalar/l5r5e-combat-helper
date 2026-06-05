@@ -19,10 +19,12 @@
  */
 export function registerCriticalStrikeRollHandler() {
   Hooks.on("renderChatMessage", (message, html) => {
-    // Find all critical strike roll buttons in this message
-    html.find(".critical-strike-roll-button").click(async (event) => {
-      event.preventDefault();
-      await handleCriticalStrikeRollClick(message, event.currentTarget);
+    const el = html instanceof HTMLElement ? html : html[0];
+    el.querySelectorAll(".critical-strike-roll-button").forEach((btn) => {
+      btn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await handleCriticalStrikeRollClick(message, event.currentTarget);
+      });
     });
   });
 }
