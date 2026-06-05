@@ -19,7 +19,7 @@
  */
 
 import { reverseCriticalEffect } from "./critical-effects-application.js";
-import { confirmDialog } from "./compat-utils.js";
+import { confirmDialog, resolveMessageId } from "./compat-utils.js";
 
 /**
  * Registers the context menu hook that injects the Shattering Parry option
@@ -348,23 +348,6 @@ async function createShatteringParryMessage(target, weapon, parryData) {
   });
 }
 
-/**
- * Safely extracts a message ID from various forms of the `li` element
- * passed by Foundry's context menu system across different versions.
- *
- * @param {HTMLElement|jQuery|Object} li
- * @returns {string|null}
- */
-function resolveMessageId(li) {
-  if (li instanceof HTMLElement) {
-    return li.dataset.messageId || li.getAttribute("data-message-id");
-  } else if (li?.jquery || (typeof jQuery !== "undefined" && li instanceof jQuery)) {
-    return li.data("messageId") || li.attr("data-message-id");
-  }
-  return (
-    li?.dataset?.messageId || li?.getAttribute?.("data-message-id") || null
-  );
-}
 
 /**
  * Returns the first readied or equipped weapon from the actor's inventory.
