@@ -8,6 +8,7 @@
  */
 
 import { DEFAULT_SCAR_CONFIG } from "./critical-effects-table.js";
+import { confirmDialog } from "./compat-utils.js";
 
 export class CustomCriticalConfig {
   static async open() {
@@ -113,61 +114,60 @@ export class CustomCriticalConfig {
       </div>`;
   }
 
-  static _onRender(html, workingData) {
-    const root = html.closest(".dialog-content").length
-      ? html.closest(".dialog-content")
-      : html;
+  static _onRender(htmlOrJQuery, workingData) {
+    const el = htmlOrJQuery instanceof HTMLElement ? htmlOrJQuery : htmlOrJQuery[0];
+    const root = el.closest(".dialog-content") ?? el;
 
-    root.find(".add-scar-btn").click(function () {
-      const ring = $(this).data("ring");
-      CustomCriticalConfig._readForm(root, workingData);
-      workingData.scars.rings[ring] = workingData.scars.rings[ring] || [];
-      workingData.scars.rings[ring].push("");
-      CustomCriticalConfig._rerender(root, workingData);
+    root.querySelectorAll(".add-scar-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const ring = this.dataset.ring;
+        CustomCriticalConfig._readForm(root, workingData);
+        workingData.scars.rings[ring] = workingData.scars.rings[ring] || [];
+        workingData.scars.rings[ring].push("");
+        CustomCriticalConfig._rerender(root, workingData);
+      });
     });
 
-    root.find(".remove-scar-item").click(function () {
-      const ring = $(this).data("ring");
-      const idx = parseInt($(this).data("index"));
-      CustomCriticalConfig._readForm(root, workingData);
-      workingData.scars.rings[ring].splice(idx, 1);
-      CustomCriticalConfig._rerender(root, workingData);
+    root.querySelectorAll(".remove-scar-item").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const ring = this.dataset.ring;
+        const idx = parseInt(this.dataset.index);
+        CustomCriticalConfig._readForm(root, workingData);
+        workingData.scars.rings[ring].splice(idx, 1);
+        CustomCriticalConfig._rerender(root, workingData);
+      });
     });
 
-    root.find(".reset-scars").click(() => {
-      Dialog.confirm({
+    root.querySelector(".reset-scars")?.addEventListener("click", async () => {
+      const confirmed = await confirmDialog({
         title: game.i18n.localize(
           "l5r5e-combat-helper.config.resetScars.title",
         ),
         content: `<p>${game.i18n.localize("l5r5e-combat-helper.config.resetScars.confirm")}</p>`,
-        yes: () => {
-          workingData.scars = foundry.utils.deepClone(DEFAULT_SCAR_CONFIG);
-          CustomCriticalConfig._rerender(root, workingData);
-        },
       });
+      if (confirmed) {
+        workingData.scars = foundry.utils.deepClone(DEFAULT_SCAR_CONFIG);
+        CustomCriticalConfig._rerender(root, workingData);
+      }
     });
   }
 
   static _rerender(root, workingData) {
-    const container = root.closest(".dialog-content").length
-      ? root.closest(".dialog-content")
-      : root;
-    container.html(CustomCriticalConfig._buildHTML(workingData));
+    const container = root.closest(".dialog-content") ?? root;
+    container.innerHTML = CustomCriticalConfig._buildHTML(workingData);
     CustomCriticalConfig._onRender(container, workingData);
   }
 
   static _readForm(html, workingData) {
-    const comp = html.find(".scars-compendium-input").val();
+    const el = html instanceof HTMLElement ? html : html[0];
+    const comp = el.querySelector(".scars-compendium-input")?.value;
     if (comp !== undefined) workingData.scars.compendium = comp.trim();
 
     for (const ring of ["air", "earth", "fire", "water", "void"]) {
-      const inputs = html.find(`.scar-item-input[data-ring="${ring}"]`);
+      const inputs = el.querySelectorAll(`.scar-item-input[data-ring="${ring}"]`);
       if (inputs.length > 0) {
-        workingData.scars.rings[ring] = inputs
-          .map(function () {
-            return $(this).val().trim();
-          })
-          .get()
+        workingData.scars.rings[ring] = Array.from(inputs)
+          .map((input) => input.value.trim())
           .filter(Boolean);
       }
     }

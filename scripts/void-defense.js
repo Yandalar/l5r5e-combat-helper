@@ -21,6 +21,7 @@ import {
   isIncapacitated,
 } from "./actor-utils.js";
 import { createVoidCriticalStrikeMessage } from "./chat-messages.js";
+import { confirmDialog } from "./compat-utils.js";
 
 /**
  * Registers the hook responsible for extending the chat message
@@ -91,7 +92,7 @@ function addVoidOption(html, options) {
       // Extract messageId in a version-tolerant way
       if (li instanceof HTMLElement) {
         messageId = li.dataset.messageId || li.getAttribute("data-message-id");
-      } else if (li.jquery || li instanceof jQuery) {
+      } else if (li?.jquery || (typeof jQuery !== "undefined" && li instanceof jQuery)) {
         messageId = li.data("messageId") || li.attr("data-message-id");
       } else {
         messageId =
@@ -132,7 +133,7 @@ function addVoidOption(html, options) {
 
       if (li instanceof HTMLElement) {
         messageId = li.dataset.messageId || li.getAttribute("data-message-id");
-      } else if (li.jquery || li instanceof jQuery) {
+      } else if (li?.jquery || (typeof jQuery !== "undefined" && li instanceof jQuery)) {
         messageId = li.data("messageId") || li.attr("data-message-id");
       } else {
         messageId =
@@ -147,7 +148,7 @@ function addVoidOption(html, options) {
 
       const voidBefore = getVoidPoints(target);
 
-      const confirmed = await Dialog.confirm({
+      const confirmed = await confirmDialog({
         title: game.i18n.localize(
           "l5r5e-combat-helper.dialog.voidDefense.title",
         ),
@@ -159,9 +160,6 @@ function addVoidOption(html, options) {
             void: voidBefore,
           },
         ),
-        yes: () => true,
-        no: () => false,
-        defaultYes: false,
       });
 
       if (!confirmed) return;
