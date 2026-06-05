@@ -42,6 +42,7 @@
   "l5r5e-combat-helper.chat.criticalStrike.titleVoid": "💀 CRITICAL STRIKE! (Void Choice)",
   "l5r5e-combat-helper.chat.criticalStrike.delivers": "<strong>{attacker}</strong> delivers a critical strike to <strong>{target}</strong>!",
   "l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated": "{target} was already Incapacitated when struck!",
+  "l5r5e-combat-helper.chat.criticalStrike.opportunitySpent": "<strong>{attacker}</strong> spent 2 Opportunities to deliver a Critical Strike!",
   "l5r5e-combat-helper.chat.criticalStrike.voidChoice": "<strong>{target}</strong> spent a Void Point and chose to suffer a Critical Strike instead of defending",
   "l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness": "<strong>Weapon Deadliness:</strong> {deadliness}",
   "l5r5e-combat-helper.chat.criticalStrike.voidSpent": "Void Point spent: {before} → {after}",

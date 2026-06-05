@@ -42,6 +42,7 @@
   "l5r5e-combat-helper.chat.criticalStrike.titleVoid": "💀 ¡GOLPE CRÍTICO! (Elección de Vacío)",
   "l5r5e-combat-helper.chat.criticalStrike.delivers": "¡<strong>{attacker}</strong> asesta un golpe crítico a <strong>{target}</strong>!",
   "l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated": "¡{target} ya estaba Incapacitado cuando fue golpeado!",
+  "l5r5e-combat-helper.chat.criticalStrike.opportunitySpent": "¡<strong>{attacker}</strong> gastó 2 Oportunidades para asestar un Golpe Crítico!",
   "l5r5e-combat-helper.chat.criticalStrike.voidChoice": "<strong>{target}</strong> gastó un Punto de Vacío y eligió sufrir un Golpe Crítico en lugar de defenderse",
   "l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness": "<strong>Letalidad del Arma:</strong> {deadliness}",
   "l5r5e-combat-helper.chat.criticalStrike.voidSpent": "Punto de Vacío gastado: {before} → {after}",

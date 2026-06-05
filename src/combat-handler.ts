@@ -118,7 +118,9 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
   const wasCritical = isAtCriticalState(target);
 
   if (wasCritical) {
-    const weapon = getEquippedWeapon(attacker);
+    const weapon =
+      (l5rData.item?.type === "weapon" ? l5rData.item : null) ??
+      getEquippedWeapon(attacker);
     await createCriticalStrikeMessage(target, attacker, weapon, rollMessage.id);
     return;
   }
@@ -131,7 +133,9 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
   const finalDamage = Math.max(0, rawDamage - armorResistance);
 
   const opportunities = l5rData.summary?.opportunity || 0;
-  const equippedWeapon = getEquippedWeapon(attacker);
+  const equippedWeapon =
+    (l5rData.item?.type === "weapon" ? l5rData.item : null) ??
+    getEquippedWeapon(attacker);
 
   const attackData = {
     attackerId: attacker.id,

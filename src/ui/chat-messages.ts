@@ -204,7 +204,7 @@ export async function createArmorBlockedMessage(
  * @param {Item|null} weapon - Weapon used for the attack
  * @returns {Promise<void>}
  */
-export async function createCriticalStrikeMessage(target, attacker, weapon, originRollId = null) {
+export async function createCriticalStrikeMessage(target, attacker, weapon, originRollId = null, reason = "incapacitated") {
   const i18n = game.i18n;
 
   let deadliness = 5; // Default deadliness
@@ -220,12 +220,10 @@ export async function createCriticalStrikeMessage(target, attacker, weapon, orig
       target: target.name,
     },
   );
-  const alreadyIncap = i18n.format(
-    "l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated",
-    {
-      target: target.name,
-    },
-  );
+  const reasonLine = reason === "opportunity"
+    ? i18n.format("l5r5e-combat-helper.chat.criticalStrike.opportunitySpent", { attacker: attacker.name })
+    : i18n.format("l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated", { target: target.name });
+  const alreadyIncap = reasonLine;
   const weaponDead = i18n.format(
     "l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness",
     {

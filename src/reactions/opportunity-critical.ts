@@ -121,7 +121,7 @@ async function handleOpportunityCriticalClick(message, button) {
       opportunityCriticalUsed: true,
     });
 
-    await createCriticalStrikeMessage(target, attacker, weapon);
+    await createCriticalStrikeMessage(target, attacker, weapon, null, "opportunity");
 
     button.textContent = game.i18n.localize(
       "l5r5e-combat-helper.chat.opportunityCritical.usedButton",
