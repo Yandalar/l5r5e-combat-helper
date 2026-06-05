@@ -20,6 +20,7 @@ An automation module for Foundry VTT that streamlines combat damage application 
 - **Bonus Success Calculation**: Adds additional successes beyond TN as bonus damage
 - **Rich Chat Messages**: Informative chat cards showing attack, damage, and critical calculations
 - **GM Target Assignment**: The GM can retroactively assign or reassign the target of any attack roll — useful when a player forgot to select a target or the wrong token was targeted
+- **GM Difficulty Change**: The GM can retroactively change the Target Number (TN) of any L5R5e roll — the system reverts all downstream effects, recalculates the result, and re-applies consequences with the new difficulty
 
 ## Installation
 
@@ -208,6 +209,36 @@ If reassigning after damage was already applied:
 - Damage is then calculated and applied to the **new target**
 
 > **Note:** This option is only visible to the GM and only appears on finished martial attack roll messages (melee, ranged, or unarmed skills with a completed roll).
+
+### GM Difficulty Change
+
+The GM can retroactively change the **Target Number (TN)** of any completed L5R5e roll. The module reverts all downstream effects, recalculates the outcome, and re-applies consequences based on the new difficulty.
+
+To use this feature:
+
+1. **Right-click any L5R5e roll message** in the chat log
+2. Select **"Change Difficulty (TN)"** (GM-only option)
+3. Enter the new TN in the dialog
+4. Confirm
+
+What happens:
+
+- The original roll message **stays in the chat** and gets a note at the bottom showing the old TN, new TN, and updated success/failure result
+- All downstream messages (damage, critical strike prompt, mitigation result, critical effect) are **deleted**
+- All state changes (fatigue, critical conditions, scars, weapon damage) are **automatically reverted**
+- The module **re-runs the full downstream flow** with the new TN — applying damage, triggering critical strikes, or doing nothing if the roll now fails
+
+**Reversal coverage:**
+
+| Downstream effect | Reverted automatically |
+|---|---|
+| Fatigue damage | ✓ |
+| Critical conditions (Lightly/Severely Wounded, Bleeding, Dying) | ✓ |
+| Permanent scar | ✓ |
+| Armor Damaged (Close Call critical) | ✓ |
+| Weapon Damaged (Shattering Parry) | ✓ |
+
+> **Note:** This option is visible to the GM on any message containing an L5R5e roll. For attack rolls on already-incapacitated targets, the GM must have the intended target token selected on the canvas when changing difficulty — so the module knows which actor to target.
 
 ## Chat Message Examples
 

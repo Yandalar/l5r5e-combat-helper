@@ -17,6 +17,7 @@
  */
 
 import { applyCriticalEffect } from "./critical-effects-application";
+import { isWeaponSharp } from "./critical-effects-table";
 
 /**
  * Registers the hook that listens for completed mitigation rolls.
@@ -101,7 +102,7 @@ async function processCriticalMitigation(
   mitigationData,
   rollMessage,
 ) {
-  const { weaponDeadliness, criticalMessageId } = mitigationData;
+  const { weaponDeadliness, criticalMessageId, originRollId } = mitigationData;
 
   const totalSuccesses = l5rData.summary?.totalSuccess || 0;
   const tn = l5rData.difficulty || 1;
@@ -159,15 +160,31 @@ async function processCriticalMitigation(
 
   await applyCriticalEffect(actor, finalSeverity, ringUsed, weapon, attacker);
 
+  // Capture whether the attacking weapon had Razor-Edged NOW (before it could
+  // change) so reverseCriticalEffect can correctly undo conditional bleeding.
+  const wasWeaponSharp = isWeaponSharp(weapon);
+
+  // Store reversal metadata on every mitigation result so difficulty-change
+  // can revert the full chain regardless of whether SP was used.
+  if (mitigationMessage) {
+    await mitigationMessage.setFlag(
+      "l5r5e-combat-helper",
+      "mitigationResult",
+      {
+        originRollId: originRollId || null,
+        targetId: actor.id,
+        finalSeverity,
+        ringUsed,
+        wasWeaponSharp,
+        fitnessRollMessageId: rollMessage.id,
+      },
+    );
+  }
+
   // Store Shattering Parry data in the mitigation result message so the
   // context-menu handler can retrieve it later.
   // Only store on the first (non-reroll) resolution to avoid re-arming.
   if (mitigationMessage && !mitigationData.isShatteringParryReroll) {
-    // Capture whether the attacking weapon had Razor-Edged NOW (before it could
-    // change) so reverseCriticalEffect can correctly undo conditional bleeding.
-    const { isWeaponSharp } = await import("./critical-effects-table.js");
-    const wasWeaponSharp = isWeaponSharp(weapon);
-
     await mitigationMessage.setFlag(
       "l5r5e-combat-helper",
       "shatteringParryData",
@@ -180,6 +197,7 @@ async function processCriticalMitigation(
         ringUsed,
         weaponId: attackerWeaponId,
         wasWeaponSharp,
+        originRollId: originRollId || null,
         used: false,
       },
     );

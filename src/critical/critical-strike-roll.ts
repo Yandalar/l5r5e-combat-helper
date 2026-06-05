@@ -80,7 +80,7 @@ async function handleCriticalStrikeRollClick(message, button) {
       return;
     }
 
-    const { targetId, attackerId, weaponDeadliness } = criticalData;
+    const { targetId, attackerId, weaponDeadliness, originRollId } = criticalData;
 
     // Get the target actor
     const target = game.actors.get(targetId);
@@ -105,7 +105,7 @@ async function handleCriticalStrikeRollClick(message, button) {
       "l5r5e-combat-helper.chat.criticalStrike.rollingButton",
     );
 
-    await launchFitnessCheck(target, weaponDeadliness, message.id);
+    await launchFitnessCheck(target, weaponDeadliness, message.id, originRollId);
 
     // Update button text but keep it disabled
     // It will only be re-enabled if there's an error, or permanently disabled when resolved
@@ -147,7 +147,7 @@ async function handleCriticalStrikeRollClick(message, button) {
  * @param {number} weaponDeadliness - The deadliness of the attacking weapon
  * @param {string} messageId - The ID of the critical strike message
  */
-async function launchFitnessCheck(target, weaponDeadliness, messageId) {
+async function launchFitnessCheck(target, weaponDeadliness, messageId, originRollId = null) {
   const fitnessSkill = target.system?.skills?.martial?.fitness;
 
   if (fitnessSkill === null || fitnessSkill === undefined) {
@@ -164,6 +164,7 @@ async function launchFitnessCheck(target, weaponDeadliness, messageId) {
     await target.setFlag("l5r5e-combat-helper", "pendingCriticalMitigation", {
       weaponDeadliness,
       criticalMessageId: messageId,
+      originRollId,
     });
 
     // Launch official L5R5e Dice Picker Dialog

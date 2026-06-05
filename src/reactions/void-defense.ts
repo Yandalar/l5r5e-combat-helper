@@ -220,6 +220,7 @@ async function handleVoidNoDefense(
       voidBefore,
       voidAfter,
       weapon,
+      attackData.rollMessageId,
     );
   } catch (error) {
     console.error("❌ Error:", error);

@@ -204,7 +204,7 @@ export async function createArmorBlockedMessage(
  * @param {Item|null} weapon - Weapon used for the attack
  * @returns {Promise<void>}
  */
-export async function createCriticalStrikeMessage(target, attacker, weapon) {
+export async function createCriticalStrikeMessage(target, attacker, weapon, originRollId = null) {
   const i18n = game.i18n;
 
   let deadliness = 5; // Default deadliness
@@ -258,6 +258,7 @@ export async function createCriticalStrikeMessage(target, attacker, weapon) {
           attackerId: attacker.id,
           weaponDeadliness: deadliness,
           weaponId: weapon?.id || null,
+          originRollId,
         },
       },
     },
@@ -291,6 +292,7 @@ export async function createVoidCriticalStrikeMessage(
   voidBefore,
   voidAfter,
   weapon,
+  originRollId = null,
 ) {
   const i18n = game.i18n;
 
@@ -355,6 +357,7 @@ export async function createVoidCriticalStrikeMessage(
           attackerId: attacker.id,
           weaponDeadliness: deadliness,
           weaponId: weapon?.id || null,
+          originRollId,
         },
       },
     },

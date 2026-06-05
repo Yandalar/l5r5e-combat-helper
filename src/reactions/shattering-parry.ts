@@ -165,18 +165,21 @@ async function handleShatteringParry(
     // Step 2 — Damage the parrying weapon
     await applyDamagedQualityToWeapon(weapon, target);
 
-    // Step 3 — Mark this mitigation message as consumed (prevents re-use)
+    // Step 3 — Post announcement message (before marking used, so we capture its ID)
+    const announcementMessage = await createShatteringParryMessage(target, weapon, parryData);
+
+    // Step 4 — Mark this mitigation message as consumed (prevents re-use)
     await mitigationMessage.setFlag(
       "l5r5e-combat-helper",
       "shatteringParryData",
       {
         ...parryData,
         used: true,
+        shatteringParryAnnouncementId: announcementMessage?.id || null,
       },
     );
 
-    // Step 4 — Post announcement message and relaunch the Fitness check
-    await createShatteringParryMessage(target, weapon, parryData);
+    // Step 5 — Relaunch the Fitness check
     await launchNewMitigationRoll(
       target,
       parryData.weaponDeadliness,
@@ -343,7 +346,7 @@ async function createShatteringParryMessage(target, weapon, parryData) {
     </div>
   `;
 
-  await ChatMessage.create({
+  return await ChatMessage.create({
     content,
     speaker: ChatMessage.getSpeaker({ actor: target }),
   });

@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-06-05
+
+### Added
+
+- Implemented **GM Difficulty Change**: the GM can right-click any L5R5e roll message and retroactively change its Target Number (TN).
+  - The system reverts the full downstream chain (fatigue, critical conditions, scars, weapon Damaged quality) before re-applying consequences under the new TN.
+  - The original roll message stays in chat and receives an inline note showing old TN → new TN and the updated success/failure outcome.
+  - Supports the complete chain: damage → critical strike → Fitness mitigation → critical effects → Shattering Parry reroll.
+  - For non-attack rolls the module posts a summary message with the new success count; no state changes are reverted since none were triggered.
+- Implemented **GM Target Assignment**: the GM can right-click any finished martial attack roll message and assign or reassign the target.
+  - On first assignment the module applies damage to the selected token.
+  - On reassignment it reverts fatigue from the previous target, deletes the old damage message, and applies damage to the new target.
+- Added **Foundry v13/v14 compatibility layer** (`compat-utils.ts`) providing `confirmDialog` (wraps `DialogV2.confirm` with `Dialog.confirm` fallback) and `resolveMessageId` (handles both `HTMLElement` and jQuery `li` elements from context menus).
+
+### Fixed
+
+- Removed an unintentional dynamic `import()` of `critical-effects-table.ts` inside `critical-mitigation.ts` — a leftover from the original JS codebase. Converted to a static import, eliminating a Vite build warning.
+
+### Internal
+
+- Migrated entire codebase from JavaScript to **TypeScript + Vite** (Phase 1: all files carry `// @ts-nocheck`; type errors suppressed to allow incremental adoption).
+- Build pipeline replaced with Vite; `dist/bundle.js` is the single output loaded by Foundry.
+- Added `originRollId` tracking to every downstream chat message flag (`criticalStrike`, `shatteringParryData`, new `mitigationResult`) so the full effect chain can be walked in both directions from any roll.
+- `shatteringParryData` flag now stores `shatteringParryAnnouncementId` and `fitnessRollMessageId` for complete chain deletion on difficulty change.
+- `createShatteringParryMessage()` now returns the created `ChatMessage` so its ID can be recorded before marking the mitigation message as consumed.
+
+---
+
 ## [0.9.0] - 2026-03-11
 
 ### Added

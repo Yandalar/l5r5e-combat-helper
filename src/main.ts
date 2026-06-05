@@ -21,6 +21,7 @@ import { registerOpportunityCriticalHandler } from "./reactions/opportunity-crit
 import { CustomCriticalConfig } from "./ui/custom-critical-config";
 import { registerTargetAssignmentMenu } from "./target-assignment";
 import { registerHandlebarsHelpers } from "./helpers/handlebars";
+import { registerDifficultyChangeMenu } from "./difficulty-change";
 
 Hooks.once("init", () => {
   // Register custom Handlebars helpers used by module templates
@@ -107,6 +108,9 @@ Hooks.once("init", () => {
 // Register chat context hook early so it is available
 // as soon as the chat log UI becomes interactive.
 registerVoidDefenseHook();
+
+// Register GM difficulty-change context menu hook
+registerDifficultyChangeMenu();
 
 // Register Shattering Parry context menu hook
 registerShatteringParryHook();

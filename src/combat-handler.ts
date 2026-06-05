@@ -119,7 +119,7 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
 
   if (wasCritical) {
     const weapon = getEquippedWeapon(attacker);
-    await createCriticalStrikeMessage(target, attacker, weapon);
+    await createCriticalStrikeMessage(target, attacker, weapon, rollMessage.id);
     return;
   }
 
