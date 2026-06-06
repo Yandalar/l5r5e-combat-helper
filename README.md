@@ -15,6 +15,7 @@ An automation module for Foundry VTT that streamlines combat for the Legend of t
 - **Opportunity Critical Strike** — Lets attackers spend 2 Opportunities from a successful attack to deal a Critical Strike alongside normal damage
 - **Void Reaction – Don't Defend** — Targets may spend 1 Void Point to willingly accept a Critical Strike instead of defending
 - **Shattering Parry** — After rolling Fitness, characters may reroll all mitigation dice at the cost of their weapon gaining the Damaged quality
+- **Attitude Effects** — Automatically applies the mechanical effects of Air, Fire, and Earth stances: Air increases incoming attack TN, Fire adds strife symbols as bonus damage, Earth blocks opportunity-based critical strikes
 - **GM Target Assignment** — Assign or reassign the target of any attack roll after the fact, reverting and reapplying damage automatically
 - **GM Difficulty Change** — Retroactively change the TN of any roll; all downstream effects are reverted and recalculated
 

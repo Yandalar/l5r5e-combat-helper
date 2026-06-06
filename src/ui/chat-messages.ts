@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { isEarthStanceProtected } from "../stances/stance-effects";
 /**
  * Chat message generation helpers.
  *
@@ -53,15 +54,17 @@ export async function createDamageMessage(
   endurance,
   incapacitated,
   attackData,
+  fireBonus = 0,
 ) {
   const i18n = game.i18n;
 
   let armorInfo = "";
   if (armorResistance > 0) {
+    const effectiveRaw = rawDamage + fireBonus;
     const reducedText = i18n.format(
       "l5r5e-combat-helper.chat.damageApplied.reducedByArmor",
       {
-        raw: rawDamage,
+        raw: effectiveRaw,
         armor: armorResistance,
         final: damage,
       },
@@ -75,8 +78,9 @@ export async function createDamageMessage(
   }
 
   // Show the opportunity critical button if the attacker rolled 2+ opportunities
+  // and the target is not protected by Earth stance
   let opportunityButton = "";
-  if ((attackData.opportunities || 0) >= 2) {
+  if ((attackData.opportunities || 0) >= 2 && !isEarthStanceProtected(target)) {
     const buttonText = i18n.format(
       "l5r5e-combat-helper.chat.opportunityCritical.button",
       { opportunities: attackData.opportunities },
@@ -86,6 +90,15 @@ export async function createDamageMessage(
         ${buttonText}
       </button>
     `;
+  }
+
+  let fireBonusLine = "";
+  if (fireBonus > 0) {
+    const fireBonusText = i18n.format(
+      "l5r5e-combat-helper.chat.damageApplied.fireStance",
+      { bonus: fireBonus },
+    );
+    fireBonusLine = `<p>${fireBonusText}</p>`;
   }
 
   const title = i18n.localize("l5r5e-combat-helper.chat.damageApplied.title");
@@ -110,6 +123,7 @@ export async function createDamageMessage(
     <div class="l5r5e-combat-helper">
       <h3>${title}</h3>
       <p>${dealsTo}</p>
+      ${fireBonusLine}
       ${armorInfo}
       <p>${fatigueText}</p>
       ${incapacitatedMessage}
@@ -142,6 +156,7 @@ export async function createDamageMessage(
  * @param {Actor} attacker - Actor performing the attack
  * @param {number} rawDamage - Damage before armor mitigation
  * @param {number} armorResistance - Armor resistance applied
+ * @param {number} fireBonus - Additional damage from Fire stance strife bonus (default 0)
  * @returns {Promise<void>}
  */
 export async function createArmorBlockedMessage(
@@ -149,6 +164,7 @@ export async function createArmorBlockedMessage(
   attacker,
   rawDamage,
   armorResistance,
+  fireBonus = 0,
 ) {
   const i18n = game.i18n;
 
@@ -160,10 +176,11 @@ export async function createArmorBlockedMessage(
       target: target.name,
     },
   );
+  const effectiveRaw = rawDamage + fireBonus;
   const calculation = i18n.format(
     "l5r5e-combat-helper.chat.damageBlocked.calculation",
     {
-      raw: rawDamage,
+      raw: effectiveRaw,
       armor: armorResistance,
     },
   );
@@ -360,6 +377,42 @@ export async function createVoidCriticalStrikeMessage(
       },
     },
     ownership: getTargetOwnership(target),
+  });
+}
+
+/**
+ * Creates a chat message announcing that an attack was deflected by the
+ * target's Air stance.
+ *
+ * This occurs when the target is in Air stance, which increases the target
+ * number of attacks against them. The message notifies all players of the
+ * deflection and the TN bonus applied.
+ *
+ * @param {Actor} target - Actor in Air stance who deflected the attack
+ * @param {Actor} attacker - Actor who made the attack
+ * @param {number} tnBonus - The TN bonus applied (1 or 2 depending on school rank)
+ * @returns {Promise<void>}
+ */
+export async function createAirDeflectMessage(target, attacker, tnBonus) {
+  const i18n = game.i18n;
+
+  const title = i18n.localize("l5r5e-combat-helper.chat.airDeflect.title");
+  const attacks = i18n.format("l5r5e-combat-helper.chat.airDeflect.attacks", {
+    attacker: attacker.name,
+    target: target.name,
+    bonus: tnBonus,
+  });
+
+  const content = `
+    <div class="l5r5e-combat-helper air-deflect">
+      <h3>${title}</h3>
+      <p>${attacks}</p>
+    </div>
+  `;
+
+  await ChatMessage.create({
+    content,
+    speaker: ChatMessage.getSpeaker({ actor: attacker }),
   });
 }
 

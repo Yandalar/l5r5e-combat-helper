@@ -16,6 +16,7 @@
  */
 
 import { createCriticalStrikeMessage } from "../ui/chat-messages";
+import { isEarthStanceProtected } from "../stances/stance-effects";
 
 /**
  * Registers the renderChatMessage hook that attaches click listeners
@@ -101,6 +102,20 @@ async function handleOpportunityCriticalClick(message, button) {
     if (!target) {
       ui.notifications.error(
         game.i18n.localize("l5r5e-combat-helper.notifications.targetNotFound"),
+      );
+      return;
+    }
+
+    if (isEarthStanceProtected(target)) {
+      ui.notifications.warn(
+        game.i18n.format(
+          "l5r5e-combat-helper.notifications.earthStanceProtected",
+          { name: target.name },
+        ),
+      );
+      button.disabled = true;
+      button.textContent = game.i18n.localize(
+        "l5r5e-combat-helper.chat.opportunityCritical.usedButton",
       );
       return;
     }
