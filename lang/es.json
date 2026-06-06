@@ -34,6 +34,9 @@
   "l5r5e-combat-helper.chat.damageApplied.reducedByArmor": "Daño reducido por armadura: {raw} - {armor} = {final}",
   "l5r5e-combat-helper.chat.damageApplied.fatigue": "Fatiga: {current} → {new} / {endurance}",
   "l5r5e-combat-helper.chat.damageApplied.incapacitated": "⚠️ <strong>¡INCAPACITADO!</strong>",
+  "l5r5e-combat-helper.chat.airDeflect.title": "🌬️ Ataque Desviado",
+  "l5r5e-combat-helper.chat.airDeflect.attacks": "<strong>{attacker}</strong> ataca a <strong>{target}</strong> — bloqueado por Actitud Aire (ND +{bonus})",
+  "l5r5e-combat-helper.chat.damageApplied.fireStance": "🔥 Actitud Fuego: +{bonus} (conflicto)",
   "l5r5e-combat-helper.chat.damageBlocked.title": "🛡️ Daño Bloqueado",
   "l5r5e-combat-helper.chat.damageBlocked.attacks": "<strong>{attacker}</strong> ataca a <strong>{target}</strong>",
   "l5r5e-combat-helper.chat.damageBlocked.calculation": "Daño bruto: {raw} - Armadura: {armor} = <strong>0 de daño</strong>",
@@ -190,5 +193,6 @@
   "l5r5e-combat-helper.chat.difficultyChanged.result": "ND cambió de {oldTN} a {newTN}. Éxitos totales: {successes}.",
   "l5r5e-combat-helper.chat.difficultyChanged.success": "✓ ¡Éxito! ({bonus} éxitos adicionales)",
   "l5r5e-combat-helper.chat.difficultyChanged.failure": "✗ Fallo — necesitaba {tn}, obtuvo {successes}",
-  "l5r5e-combat-helper.notifications.changeDifficulty.error": "Error al cambiar la dificultad: {error}"
+  "l5r5e-combat-helper.notifications.changeDifficulty.error": "Error al cambiar la dificultad: {error}",
+  "l5r5e-combat-helper.notifications.earthStanceProtected": "{name} está en Actitud Tierra — no se pueden gastar Oportunidades para infligir golpes críticos"
 }

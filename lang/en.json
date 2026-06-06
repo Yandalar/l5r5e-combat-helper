@@ -34,6 +34,9 @@
   "l5r5e-combat-helper.chat.damageApplied.reducedByArmor": "Damage reduced by armor: {raw} - {armor} = {final}",
   "l5r5e-combat-helper.chat.damageApplied.fatigue": "Fatigue: {current} → {new} / {endurance}",
   "l5r5e-combat-helper.chat.damageApplied.incapacitated": "⚠️ <strong>INCAPACITATED!</strong>",
+  "l5r5e-combat-helper.chat.airDeflect.title": "🌬️ Attack Deflected",
+  "l5r5e-combat-helper.chat.airDeflect.attacks": "<strong>{attacker}</strong> attacks <strong>{target}</strong> — blocked by Air Stance (TN +{bonus})",
+  "l5r5e-combat-helper.chat.damageApplied.fireStance": "🔥 Fire Stance: +{bonus} (strife)",
   "l5r5e-combat-helper.chat.damageBlocked.title": "🛡️ Damage Blocked",
   "l5r5e-combat-helper.chat.damageBlocked.attacks": "<strong>{attacker}</strong> attacks <strong>{target}</strong>",
   "l5r5e-combat-helper.chat.damageBlocked.calculation": "Raw damage: {raw} - Armor: {armor} = <strong>0 damage</strong>",
@@ -190,5 +193,6 @@
   "l5r5e-combat-helper.chat.difficultyChanged.result": "TN changed from {oldTN} to {newTN}. Total successes: {successes}.",
   "l5r5e-combat-helper.chat.difficultyChanged.success": "✓ Success! ({bonus} bonus successes)",
   "l5r5e-combat-helper.chat.difficultyChanged.failure": "✗ Failed — needed {tn}, rolled {successes}",
-  "l5r5e-combat-helper.notifications.changeDifficulty.error": "Error changing difficulty: {error}"
+  "l5r5e-combat-helper.notifications.changeDifficulty.error": "Error changing difficulty: {error}",
+  "l5r5e-combat-helper.notifications.earthStanceProtected": "{name} is in Earth Stance — opportunities cannot be spent to inflict critical strikes"
 }

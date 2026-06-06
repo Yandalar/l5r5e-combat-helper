@@ -28,7 +28,12 @@ import {
   createDamageMessage,
   createArmorBlockedMessage,
   createCriticalStrikeMessage,
+  createAirDeflectMessage,
 } from "./ui/chat-messages";
+import {
+  getAirTNBonus,
+  getFireStrifeBonus,
+} from "./stances/stance-effects";
 
 /**
  * Registers the main combat handler hook.
@@ -125,12 +130,20 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     return;
   }
 
-  const success = checkAttackSuccess(l5rData);
-  if (!success) return;
+  const airBonus = getAirTNBonus(target);
+  const success = checkAttackSuccess(l5rData, airBonus);
+
+  if (!success) {
+    if (airBonus > 0 && checkAttackSuccess(l5rData, 0)) {
+      await createAirDeflectMessage(target, attacker, airBonus);
+    }
+    return;
+  }
 
   const rawDamage = calculateDamage(l5rData, attacker);
   const armorResistance = getArmorResistance(target);
-  const finalDamage = Math.max(0, rawDamage - armorResistance);
+  const fireBonus = getFireStrifeBonus(attacker, l5rData);
+  const finalDamage = Math.max(0, rawDamage + fireBonus - armorResistance);
 
   const opportunities = l5rData.summary?.opportunity || 0;
   const equippedWeapon =
@@ -143,6 +156,7 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     weaponId: equippedWeapon?.id || null,
     rawDamage,
     armorResistance,
+    fireBonus,
     finalDamage,
     opportunities,
     opportunityCriticalUsed: false,
@@ -160,6 +174,7 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     rawDamage,
     armorResistance,
     attackData,
+    fireBonus,
   );
 }
 
@@ -210,6 +225,7 @@ async function applyDamage(
   rawDamage,
   armorResistance,
   attackData,
+  fireBonus = 0,
 ) {
   if (!target) {
     console.warn("L5R5e Combat Helper | Invalid target");
@@ -222,6 +238,7 @@ async function applyDamage(
       attacker,
       rawDamage,
       armorResistance,
+      fireBonus,
     );
 
     return;
@@ -271,6 +288,7 @@ async function applyDamage(
       endurance,
       wasIncapacitated,
       attackData,
+      fireBonus,
     );
   } catch (error) {
     console.error("L5R5e Combat Helper | Error applying damage:", error);

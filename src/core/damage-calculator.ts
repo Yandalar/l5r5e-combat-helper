@@ -31,11 +31,12 @@
  * @param {Object} [l5rData.summary] - Roll summary data
  * @param {number} [l5rData.summary.totalSuccess] - Total successes rolled
  * @param {number} [l5rData.difficulty] - Target Number for the roll
+ * @param {number} [tnBonus=0] - Optional modifier to add to the Target Number (e.g. from stance effects)
  * @returns {boolean} True if the attack succeeds, false otherwise.
  */
-export function checkAttackSuccess(l5rData) {
+export function checkAttackSuccess(l5rData, tnBonus = 0) {
   const successes = l5rData.summary?.totalSuccess || 0;
-  const tn = l5rData.difficulty || 2;
+  const tn = (l5rData.difficulty || 2) + tnBonus;
 
   return successes >= tn;
 }

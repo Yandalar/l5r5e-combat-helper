@@ -24,6 +24,7 @@ import {
   calculateDamage,
   getArmorResistance,
 } from "./core/damage-calculator";
+import { getAirTNBonus, getFireStrifeBonus } from "./stances/stance-effects";
 import { processAttack } from "./combat-handler";
 
 /**
@@ -133,11 +134,13 @@ function addAssignTargetOption(html, options) {
 
       try {
         // 4. Compute predicted damage on the new target
-        const success = checkAttackSuccess(l5rData);
+        const airBonus = getAirTNBonus(newTarget);
+        const success = checkAttackSuccess(l5rData, airBonus);
         const rawDamage = calculateDamage(l5rData, attacker);
         const armorResistance = getArmorResistance(newTarget);
+        const fireBonus = getFireStrifeBonus(attacker, l5rData);
         const finalDamage = success
-          ? Math.max(0, rawDamage - armorResistance)
+          ? Math.max(0, rawDamage + fireBonus - armorResistance)
           : 0;
 
         // 5. Show confirmation dialog — content varies based on whether
