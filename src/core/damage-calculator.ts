@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { resolveAttackWeapon, getWeaponBaseDamage } from "./weapon-utils";
+
 /**
  * Damage Resolution Utilities
  *
@@ -65,25 +67,8 @@ export function checkAttackSuccess(l5rData, tnBonus = 0) {
  * @returns {number} Total calculated damage before armor mitigation.
  */
 export function calculateDamage(l5rData, attacker) {
-  let baseDamage = 0;
-
-  const rollWeapon =
-    l5rData.item?.type === "weapon" ? l5rData.item : null;
-
-  if (rollWeapon) {
-    baseDamage = parseInt(rollWeapon.system?.damage) || 0;
-  } else if (attacker.items) {
-    const equippedWeapons = attacker.items.filter(
-      (item) =>
-        item.type === "weapon" &&
-        (item.system?.equipped === true || item.system?.readied === true),
-    );
-
-    if (equippedWeapons.length > 0) {
-      const weapon = equippedWeapons[0];
-      baseDamage = parseInt(weapon.system?.damage) || 0;
-    }
-  }
+  const weapon = resolveAttackWeapon(l5rData, attacker);
+  const baseDamage = getWeaponBaseDamage(weapon);
 
   const successes = l5rData.summary?.totalSuccess || 0;
   const tn = l5rData.difficulty || 2;

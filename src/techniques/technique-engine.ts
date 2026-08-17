@@ -4,6 +4,7 @@ import { getCurrentFatigue } from "../core/actor-utils";
 import { getArmorResistance } from "../core/damage-calculator";
 import { hasCondition } from "../core/conditions";
 import { logWarn } from "../core/logger";
+import { getEquippedWeapon, getWeaponBaseDamage } from "../core/weapon-utils";
 import {
   createKataSuccessMessage,
   createKataFailureMessage,
@@ -41,12 +42,8 @@ export function resolveFormula(formula, attacker, target, extraSuccesses) {
       return parseInt(attacker.system.identity?.school_rank) || 0;
     case "attacker_ring_plus_extra":
       return (parseInt(attacker.system.rings?.[formula.ring]) || 0) + extraSuccesses;
-    case "weapon_base_plus_extra": {
-      const weapon = attacker?.items?.find(
-        (i) => i.type === "weapon" && (i.system?.equipped === true || i.system?.readied === true),
-      );
-      return (parseInt(weapon?.system?.damage) || 0) + extraSuccesses;
-    }
+    case "weapon_base_plus_extra":
+      return getWeaponBaseDamage(getEquippedWeapon(attacker)) + extraSuccesses;
     default:
       console.warn("L5R5e Combat Helper | Unknown formula source:", formula.source);
       return 0;
