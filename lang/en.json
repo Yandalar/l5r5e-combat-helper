@@ -16,6 +16,7 @@
   "l5r5e-combat-helper.notifications.errorVoid": "Error: {error}",
   "l5r5e-combat-helper.notifications.noVoidPoints": "No void points available",
   "l5r5e-combat-helper.notifications.fatigueFieldNotFound": "Could not find fatigue field in actor",
+  "l5r5e-combat-helper.notifications.strifeFieldNotFound": "Could not find strife field in actor",
   "l5r5e-combat-helper.notifications.voidFieldNotFound": "Could not find void field in actor",
   "l5r5e-combat-helper.notifications.criticalEffectNotFound": "Error applying critical effect",
   "l5r5e-combat-helper.notifications.errorApplyingCritical": "Error applying critical effect: {error}",

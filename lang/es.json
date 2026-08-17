@@ -16,6 +16,7 @@
   "l5r5e-combat-helper.notifications.errorVoid": "Error: {error}",
   "l5r5e-combat-helper.notifications.noVoidPoints": "No hay puntos de vacío disponibles",
   "l5r5e-combat-helper.notifications.fatigueFieldNotFound": "No se pudo encontrar el campo de fatiga en el actor",
+  "l5r5e-combat-helper.notifications.strifeFieldNotFound": "No se pudo encontrar el campo de conflicto en el actor",
   "l5r5e-combat-helper.notifications.voidFieldNotFound": "No se pudo encontrar el campo de vacío en el actor",
   "l5r5e-combat-helper.notifications.criticalEffectNotFound": "Error al aplicar efecto crítico",
   "l5r5e-combat-helper.notifications.errorApplyingCritical": "Error al aplicar efecto crítico: {error}",
