@@ -6,6 +6,7 @@ import {
   clearAllKataEffects,
 } from "../../src/techniques/technique-engine";
 import { createMockActor } from "../helpers/foundry-mocks";
+import { expectModuleWarn } from "../helpers/setup";
 
 const NS = "l5r5e-combat-helper";
 
@@ -195,7 +196,7 @@ describe("clearAllKataEffects", () => {
     expect(actor.getFlag(NS, "resistanceBuff")).toBe(2);
   });
 
-  it("swallows a failing toggleStatusEffect silently (bare empty catch)", async () => {
+  it("swallows a failing toggleStatusEffect and logs a warning", async () => {
     const actor = createMockActor();
     actor.toggleStatusEffect = async () => {
       throw new Error("boom");
@@ -205,8 +206,7 @@ describe("clearAllKataEffects", () => {
     });
     world(actor);
 
-    // No declaration needed: the catch block logs nothing at all today.
-    // Fase 0.6 turns it into a logWarn, at which point this test declares it.
+    expectModuleWarn(/Could not remove effect on combat end/);
     await expect(clearAllKataEffects()).resolves.toBeUndefined();
     expect(actor.getFlag(NS, "activeKataEffects")).toBeUndefined();
   });

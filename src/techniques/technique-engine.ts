@@ -2,6 +2,8 @@
 
 import { getCurrentFatigue } from "../core/actor-utils";
 import { getArmorResistance } from "../core/damage-calculator";
+import { hasCondition } from "../core/conditions";
+import { logWarn } from "../core/logger";
 import {
   createKataSuccessMessage,
   createKataFailureMessage,
@@ -287,7 +289,9 @@ export async function clearAllKataEffects() {
       if (effect.statusId) {
         try {
           await actor.toggleStatusEffect(effect.statusId, { active: false });
-        } catch (e) {}
+        } catch (e) {
+          logWarn("Could not remove effect on combat end:", e);
+        }
       }
     }
     await actor.unsetFlag("l5r5e-combat-helper", "activeKataEffects");
@@ -363,8 +367,7 @@ export async function applyPassiveKataOpportunity(kata, attacker, opportunitiesS
       if (!chosenCondition) continue;
       const targets = resolveTargets(effect.target ?? "target", attacker, assignedTargets);
       for (const target of targets) {
-        const hasCondition = target.effects?.some((e) => e.statuses?.has(chosenCondition));
-        if (!hasCondition) {
+        if (!hasCondition(target, chosenCondition)) {
           ui.notifications.warn(
             game.i18n.format("l5r5e-combat-helper.notifications.conditionNotPresent", {
               condition: game.i18n.localize(`l5r5e-combat-helper.conditions.${chosenCondition}`),
