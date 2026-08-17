@@ -12,3 +12,6 @@ Thumbs.db
 *.zip
 node_modules/
 dist/
+
+# Test output
+coverage/

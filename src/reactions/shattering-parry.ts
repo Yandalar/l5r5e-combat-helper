@@ -289,14 +289,13 @@ async function launchNewMitigationRoll(
     isShatteringParryReroll: true,
   });
 
+  const isNpc = target.type === "npc";
+  const dialogParams = isNpc
+    ? { actor: target, skillId: "martial", difficulty: 1, difficultyHidden: false }
+    : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty: 1, difficultyHidden: false };
+
   try {
-    new game.l5r5e.DicePickerDialog({
-      actor: target,
-      skillId: "fitness",
-      skillCatId: "martial",
-      difficulty: 1,
-      difficultyHidden: false,
-    }).render(true);
+    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching Shattering Parry reroll:",

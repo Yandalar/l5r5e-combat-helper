@@ -40,10 +40,6 @@ export function registerCriticalMitigationHandler() {
 
       const l5rData = roll.l5r5e;
 
-      const isFitnessRoll =
-        l5rData.skillId === "fitness" && l5rData.skillCatId === "martial";
-      if (!isFitnessRoll) return;
-
       const isFinished = l5rData.rnkEnded === true;
       if (!isFinished) return;
 
@@ -59,6 +55,12 @@ export function registerCriticalMitigationHandler() {
         "pendingCriticalMitigation",
       );
       if (!mitigationData) return;
+
+      // PC: fitness/martial roll; NPC: martial roll (no individual skills)
+      const isFitnessRoll =
+        l5rData.skillId === "fitness" && l5rData.skillCatId === "martial";
+      const isNpcMartialRoll = actor.type === "npc" && l5rData.skillId === "martial";
+      if (!isFitnessRoll && !isNpcMartialRoll) return;
 
       await processCriticalMitigation(actor, l5rData, mitigationData, message);
 
@@ -111,7 +113,18 @@ async function processCriticalMitigation(
   const bonusSuccesses = Math.max(0, totalSuccesses - tn);
 
   const severityReduction = rollSucceeded ? 1 + bonusSuccesses : 0;
-  const finalSeverity = Math.max(1, weaponDeadliness - severityReduction);
+
+  const severityBoostData = actor.getFlag("l5r5e-combat-helper", "pendingCriticalSeverityBoost");
+  const severityBoost = severityBoostData?.amount || 0;
+  if (severityBoostData) {
+    await actor.unsetFlag("l5r5e-combat-helper", "pendingCriticalSeverityBoost");
+    const { removeCriticalSeverityBoostActiveEffect } = await import(
+      "../techniques/token-effects"
+    );
+    await removeCriticalSeverityBoostActiveEffect(actor);
+  }
+
+  const finalSeverity = Math.max(1, weaponDeadliness + severityBoost - severityReduction);
 
   const ringUsed = l5rData.stance || "void";
 
@@ -121,6 +134,7 @@ async function processCriticalMitigation(
     totalSuccesses,
     rollSucceeded,
     severityReduction,
+    severityBoost,
     finalSeverity,
     l5rData,
   );
@@ -265,6 +279,7 @@ async function createMitigationResultMessage(
   totalSuccesses,
   rollSucceeded,
   severityReduction,
+  severityBoost,
   finalSeverity,
   l5rData,
 ) {
@@ -276,9 +291,6 @@ async function createMitigationResultMessage(
 
   if (rollSucceeded) {
     const bonusSuccesses = totalSuccesses - 1;
-    const successText = i18n.localize(
-      "l5r5e-combat-helper.chat.mitigation.success",
-    );
     const totalSuccessesText = i18n.format(
       "l5r5e-combat-helper.chat.mitigation.totalSuccesses",
       {
@@ -293,7 +305,7 @@ async function createMitigationResultMessage(
     );
 
     mitigationText = `
-      <p class="mitigation-success">${i18n.format(successText, { reduction: severityReduction })}</p>
+      <p class="mitigation-success">${i18n.format("l5r5e-combat-helper.chat.mitigation.success", { reduction: severityReduction })}</p>
       <p>${totalSuccessesText}</p>
     `;
   } else {
@@ -340,6 +352,10 @@ async function createMitigationResultMessage(
     "l5r5e-combat-helper.chat.mitigation.nextStep",
   );
 
+  const severityBoostLine = severityBoost > 0
+    ? `<p>🔥 ${i18n.format("l5r5e-combat-helper.chat.mitigation.kataBoost", { boost: severityBoost })}</p>`
+    : "";
+
   const content = `
     <div class="l5r5e-combat-helper critical-mitigation">
       <h3>${title}</h3>
@@ -348,6 +364,7 @@ async function createMitigationResultMessage(
       ${mitigationText}
       <div class="severity-calculation">
         <p>${baseSeverityText}</p>
+        ${severityBoostLine}
         <p>${mitigationAmount}</p>
         <hr>
         <p>${finalSeverityText}</p>

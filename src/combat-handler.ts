@@ -34,6 +34,7 @@ import {
   getAirTNBonus,
   getFireStrifeBonus,
 } from "./stances/stance-effects";
+import { removeTnReductionActiveEffect } from "./techniques/token-effects";
 
 /**
  * Registers the main combat handler hook.
@@ -71,8 +72,10 @@ export function registerCombatHandler() {
       const isAttack =
         attackSkills.includes(l5rData.skillId) && l5rData.rnkEnded === true;
       const isFinished = l5rData.rnkEnded === true;
+      // Kata activations handle their own damage — skip normal combat processing
+      const isKataActivation = l5rData.item?.system?.technique_type === "kata";
 
-      if (!isAttack || !isFinished) return;
+      if (!isAttack || !isFinished || isKataActivation) return;
 
       const attacker = message.speaker?.actor
         ? game.actors.get(message.speaker.actor)
@@ -80,10 +83,8 @@ export function registerCombatHandler() {
 
       if (!attacker) return;
 
-      let target = null;
-
       if (l5rData.target?.actor) {
-        target = l5rData.target.actor;
+        await processAttack(message, attacker, l5rData.target.actor, l5rData);
       } else {
         const targets = Array.from(game.user.targets);
         if (targets.length === 0) {
@@ -95,12 +96,10 @@ export function registerCombatHandler() {
           );
           return;
         }
-        target = targets[0].actor;
+        for (const token of targets) {
+          if (token.actor) await processAttack(message, attacker, token.actor, l5rData);
+        }
       }
-
-      if (!target) return;
-
-      await processAttack(message, attacker, target, l5rData);
     } catch (error) {
       console.error("L5R5e Combat Helper | Error:", error);
     }
@@ -121,6 +120,9 @@ export function registerCombatHandler() {
  */
 export async function processAttack(rollMessage, attacker, target, l5rData) {
   const wasCritical = isAtCriticalState(target);
+  const activeKataEffects =
+    target.getFlag("l5r5e-combat-helper", "activeKataEffects") || [];
+  const hasAssistance = activeKataEffects.some((e) => e.type === "assistance");
 
   if (wasCritical) {
     const weapon =
@@ -130,8 +132,17 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     return;
   }
 
+  const pendingTnReduction = target.getFlag("l5r5e-combat-helper", "pendingTnReduction");
+  const tnReduction = pendingTnReduction?.amount || 0;
+  if (pendingTnReduction) {
+    await target.unsetFlag("l5r5e-combat-helper", "pendingTnReduction");
+    await removeTnReductionActiveEffect(target);
+  }
+
   const airBonus = getAirTNBonus(target);
-  const success = checkAttackSuccess(l5rData, airBonus);
+  const success = checkAttackSuccess(l5rData, airBonus - tnReduction);
+  const tnReductionDecisive =
+    tnReduction > 0 && success && !checkAttackSuccess(l5rData, airBonus);
 
   if (!success) {
     if (airBonus > 0 && checkAttackSuccess(l5rData, 0)) {
@@ -150,6 +161,8 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     (l5rData.item?.type === "weapon" ? l5rData.item : null) ??
     getEquippedWeapon(attacker);
 
+  const originalTn = (l5rData.difficulty || 2) + airBonus;
+
   const attackData = {
     attackerId: attacker.id,
     targetId: target.id,
@@ -160,6 +173,8 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     finalDamage,
     opportunities,
     opportunityCriticalUsed: false,
+    hasAssistance,
+    tnReductionApplied: tnReductionDecisive ? { amount: tnReduction, originalTn, effectiveTn: originalTn - tnReduction } : null,
     timestamp: Date.now(),
     resolved: false,
     rollMessageId: rollMessage.id,

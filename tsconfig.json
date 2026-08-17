@@ -4,6 +4,10 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
+    // The installed foundry-vtt-types v13 beta does not typecheck cleanly on
+    // its own. Without this, `npm run typecheck` reports ~40 errors that are
+    // all inside node_modules and none of which we can act on.
+    "skipLibCheck": true,
     "lib": ["ES2022", "DOM"],
     "types": ["@league-of-foundry-developers/foundry-vtt-types"]
   },

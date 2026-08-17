@@ -119,11 +119,22 @@ export async function createDamageMessage(
     },
   );
 
+  let tnReductionLine = "";
+  if (attackData?.tnReductionApplied) {
+    const { originalTn, effectiveTn } = attackData.tnReductionApplied;
+    tnReductionLine = `<p><em>⚔️ ${game.i18n.format(
+      "l5r5e-combat-helper.chat.damageApplied.tnReduction",
+      { original: originalTn, effective: effectiveTn },
+    )}</em></p>`;
+  }
+
   const content = `
     <div class="l5r5e-combat-helper">
       <h3>${title}</h3>
       <p>${dealsTo}</p>
       ${fireBonusLine}
+      ${tnReductionLine}
+      ${attackData?.hasAssistance ? `<p>💡 ${game.i18n.localize("l5r5e-combat-helper.kata.chat.assistanceActive")}</p>` : ""}
       ${armorInfo}
       <p>${fatigueText}</p>
       ${incapacitatedMessage}

@@ -22,6 +22,7 @@ import { CustomCriticalConfig } from "./ui/custom-critical-config";
 import { registerTargetAssignmentMenu } from "./target-assignment";
 import { registerHandlebarsHelpers } from "./helpers/handlebars";
 import { registerDifficultyChangeMenu } from "./difficulty-change";
+import { registerKataActivationHandler } from "./techniques/kata-activation";
 
 Hooks.once("init", () => {
   // Register custom Handlebars helpers used by module templates
@@ -139,4 +140,9 @@ Hooks.once("ready", () => {
    * for critical strike mitigation.
    */
   registerCriticalMitigationHandler();
+
+  /**
+   * Register kata activation handler to process kata technique rolls.
+   */
+  registerKataActivationHandler();
 });
