@@ -129,5 +129,10 @@ export function getArmorResistance(target) {
     }
   }
 
-  return resistance;
+  const kataResistanceBuff =
+    typeof target.getFlag === "function"
+      ? target.getFlag("l5r5e-combat-helper", "resistanceBuff") || 0
+      : 0;
+
+  return resistance + kataResistanceBuff;
 }

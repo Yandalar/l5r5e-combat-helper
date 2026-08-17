@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Mocks are structural stand-ins for untyped Foundry globals.
+    "strict": false,
+    // setup.ts imports lang/en.json so a missing i18n key fails a test.
+    "resolveJsonModule": true,
+    "noEmit": true
+  },
+  "include": ["tests", "vitest.config.ts"]
+}

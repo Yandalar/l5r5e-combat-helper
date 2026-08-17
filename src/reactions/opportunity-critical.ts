@@ -80,6 +80,15 @@ async function handleOpportunityCriticalClick(message, button) {
       return;
     }
 
+    const remainingOpportunities = attackData.opportunities ?? 0;
+    if (remainingOpportunities < 2) {
+      ui.notifications.warn(
+        game.i18n.localize("l5r5e-combat-helper.notifications.notEnoughOpportunities"),
+      );
+      button.disabled = true;
+      return;
+    }
+
     const attacker = game.actors.get(attackData.attackerId);
     if (!attacker) {
       ui.notifications.error(

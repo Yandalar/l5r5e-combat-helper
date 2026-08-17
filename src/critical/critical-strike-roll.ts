@@ -148,33 +148,32 @@ async function handleCriticalStrikeRollClick(message, button) {
  * @param {string} messageId - The ID of the critical strike message
  */
 async function launchFitnessCheck(target, weaponDeadliness, messageId, originRollId = null) {
-  const fitnessSkill = target.system?.skills?.martial?.fitness;
+  const isNpc = target.type === "npc";
 
-  if (fitnessSkill === null || fitnessSkill === undefined) {
-    ui.notifications.warn(
-      game.i18n.format("l5r5e-combat-helper.notifications.noFitnessSkill", {
-        name: target.name,
-      }),
-    );
-    return;
+  if (!isNpc) {
+    const fitnessSkill = target.system?.skills?.martial?.fitness;
+    if (fitnessSkill === null || fitnessSkill === undefined) {
+      ui.notifications.warn(
+        game.i18n.format("l5r5e-combat-helper.notifications.noFitnessSkill", {
+          name: target.name,
+        }),
+      );
+      return;
+    }
   }
 
   try {
-    // Store metadata in actor flag for post-roll processing
     await target.setFlag("l5r5e-combat-helper", "pendingCriticalMitigation", {
       weaponDeadliness,
       criticalMessageId: messageId,
       originRollId,
     });
 
-    // Launch official L5R5e Dice Picker Dialog
-    new game.l5r5e.DicePickerDialog({
-      actor: target,
-      skillId: "fitness",
-      skillCatId: "martial",
-      difficulty: 1,
-      difficultyHidden: false,
-    }).render(true);
+    const dialogParams = isNpc
+      ? { actor: target, skillId: "martial", difficulty: 1, difficultyHidden: false }
+      : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty: 1, difficultyHidden: false };
+
+    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching Fitness check:",
