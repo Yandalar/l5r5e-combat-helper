@@ -12,6 +12,7 @@ import {
   applyPassiveKataOpportunity,
 } from "./technique-engine";
 import { removeTnReductionActiveEffect } from "./token-effects";
+import { resolveAttackWeapon } from "../core/weapon-utils";
 import {
   createResistanceResultMessage,
   createPassiveKataOpportunityCard,
@@ -96,10 +97,24 @@ export function registerKataActivationHandler() {
         }
 
         const effectiveTn = Math.max(1, tn - tnReduction);
-        const success = totalSuccess >= effectiveTn;
         const extraSuccesses = Math.max(0, totalSuccess - effectiveTn);
 
-        await executeKata(kata, actor, targets, success, extraSuccesses, l5rData, message);
+        const ctx = {
+          attacker: actor,
+          targets,
+          extraSuccesses,
+          opportunitiesSpent: 0,
+          tn: effectiveTn,
+          totalSuccess,
+          weapon: resolveAttackWeapon(l5rData, actor),
+          resistance: null,
+          kata,
+          chosenCondition: null,
+          sourceMessageId: message.id,
+          l5rData,
+          tnReduction,
+        };
+        await executeKata(kata, ctx);
       } else {
         // ── Passive katas: trigger on matching regular martial rolls ──────────
         const martialSkills = ["melee", "ranged", "unarmed"];
@@ -203,13 +218,29 @@ async function handleResistanceRollResult(actor, l5rData, pending) {
     const attacker = pending.attackerId
       ? game.actors.get(pending.attackerId)
       : null;
+    const ctx = {
+      attacker,
+      targets: [actor],
+      extraSuccesses: 0,
+      opportunitiesSpent: 0,
+      tn: pending.difficulty,
+      totalSuccess,
+      weapon: null,
+      resistance: {
+        skill: pending.skill,
+        difficulty: pending.difficulty,
+        totalSuccess,
+        success,
+        shortfall: Math.max(0, pending.difficulty - totalSuccess),
+      },
+      kata: null,
+      chosenCondition: null,
+      sourceMessageId: null,
+      l5rData,
+    };
     for (const effect of pending.onFailure) {
-      const effectTargets = resolveTargets(
-        effect.target ?? "target",
-        attacker,
-        [actor],
-      );
-      await applyEffect(effect, attacker, effectTargets, 0);
+      const effectTargets = resolveTargets(effect.target ?? "target", ctx);
+      await applyEffect(effect, ctx, effectTargets);
     }
   }
 
@@ -379,13 +410,27 @@ async function handleOpportunityButtonClick(message, button) {
     used: true,
   });
 
-  await executeKataOpportunity(
-    oppData.kataName,
-    oppData.attackerId,
-    oppData.targetIds,
-    oppData.extraSuccesses,
-    0,
-  );
+  const targets = (oppData.targetIds || [])
+    .map((id) => game.actors.get(id))
+    .filter(Boolean);
+  // kata and opportunitiesSpent are not known here (kataOpportunityData
+  // doesn't persist either) — executeKataOpportunity fills both in once it
+  // resolves the kata definition by name.
+  const ctx = {
+    attacker,
+    targets,
+    extraSuccesses: oppData.extraSuccesses,
+    opportunitiesSpent: 0,
+    tn: 0,
+    totalSuccess: 0,
+    weapon: null,
+    resistance: null,
+    kata: null,
+    chosenCondition: null,
+    sourceMessageId: message.id,
+    l5rData: null,
+  };
+  await executeKataOpportunity(oppData.kataName, ctx, 0);
 
   await ChatMessage.create({
     content: `<div class="l5r5e-combat-helper kata-opportunity-result">

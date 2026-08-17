@@ -134,14 +134,18 @@ describe("Soaring Slice — active kata end to end", () => {
     expect(foe.system.fatigue.value).toBe(3); // weapon base only
   });
 
-  it("BUG #2: the card still reports the un-reduced TN", async () => {
+  it("the card reports the REDUCED TN (fixed bug #2 — executeKata trusts ctx.tn instead of recomputing)", async () => {
     await foe.setFlag(NS, "pendingTnReduction", { amount: 1 });
     target(foe);
     await onCreate(kataMessage(attacker, { totalSuccess: 1 }));
 
-    // executeKata recomputes tn from the definition and never sees the
-    // reduction, so success/extras used TN 1 while the card prints TN 2.
-    expect(g().game.messages.at(-1).content).toMatch(/\b2\b/);
+    // executeKata now uses ctx.tn directly (already reduced to 1 by
+    // kata-activation.ts before executeKata is called), so success/extras
+    // AND the printed TN agree: both are 1, not the un-reduced 2.
+    const content = g().game.messages.at(-1).content;
+    expect(content).toMatch(/TN:\s*1\b/);
+    expect(content).not.toMatch(/TN:\s*2\b/);
+    expect(content).toMatch(/reduced/i);
   });
 
   it("applies damage to every selected target, not just the first", async () => {

@@ -1,5 +1,72 @@
 // @ts-nocheck
 
+import { logWarn } from "../core/logger";
+
+/**
+ * Per-effect-type chat summary renderers, keyed identically to
+ * EFFECT_TYPES (technique-engine.ts) — every handler's summary now returns
+ * `type: <the effect type verbatim>` (no invented "...scheduled"-style
+ * names) specifically so this map can be validated as *total* over
+ * EFFECT_TYPES: `Object.keys(EFFECT_SUMMARY_RENDERERS)` must equal
+ * `EFFECT_TYPES` (technique-chat.test.ts asserts this directly; the Task 6
+ * registry integrity test will do the same). That's the anti-drift
+ * mechanism this map depends on — bug #4 was this map silently only
+ * handling condition/damage/assistance while the dispatcher grew past it.
+ *
+ * Note: conditionApplied's i18n string already includes its own "✅" —
+ * renderers must not add a second one.
+ */
+export const EFFECT_SUMMARY_RENDERERS = {
+  condition: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.conditionApplied", {
+      statusId: e.statusId,
+      targets: e.targets.join(", "),
+    }),
+  damage: (e) =>
+    e.results
+      .map((r) =>
+        game.i18n.format(
+          r.resource === "strife"
+            ? "l5r5e-combat-helper.kata.chat.strifeApplied"
+            : "l5r5e-combat-helper.kata.chat.damageApplied",
+          { target: r.target, damage: r.damage },
+        ),
+      )
+      .join("<br>"),
+  assistance: (e) =>
+    `💡 ${game.i18n.format("l5r5e-combat-helper.kata.chat.assistanceApplied", {
+      targets: e.targets.join(", "),
+    })}`,
+  resistance_roll: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.resistanceScheduled", {
+      targets: e.targets.map((t) => t.name).join(", "),
+    }),
+  attack_tn_reduction: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.tnReductionApplied", {
+      amount: e.amount,
+      targets: e.targets.join(", "),
+    }),
+  resistance_buff: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.resistanceBuffApplied", {
+      amount: e.amount,
+      targets: e.targets.join(", "),
+    }),
+  critical_severity_boost: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.severityBoostApplied", {
+      amount: e.amount,
+      targets: e.targets.join(", "),
+    }),
+  condition_lock: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.conditionLockApplied", {
+      condition: e.conditionId,
+      targets: e.targets.join(", "),
+    }),
+};
+const DEFAULT_RENDERER = (e) => {
+  logWarn("No chat renderer for effect summary type:", e.type);
+  return null;
+};
+
 /**
  * Creates the activation success chat card for a Kata.
  */
@@ -14,35 +81,13 @@ export async function createKataSuccessMessage(
   opportunityDefs,
   sourceMessageId,
   opportunityCount,
+  tnReduction = 0,
 ) {
   const targetNames = targets.map((t) => t.name).join(", ") || "—";
 
   const effectLines = appliedEffects
     .filter(Boolean)
-    .map((e) => {
-      if (e.type === "condition") {
-        return `✅ ${game.i18n.format("l5r5e-combat-helper.kata.chat.conditionApplied", {
-          statusId: e.statusId,
-          targets: e.targets.join(", "),
-        })}`;
-      }
-      if (e.type === "damage") {
-        return e.results
-          .map((r) =>
-            game.i18n.format("l5r5e-combat-helper.kata.chat.damageApplied", {
-              target: r.target,
-              damage: r.damage,
-            }),
-          )
-          .join("<br>");
-      }
-      if (e.type === "assistance") {
-        return `💡 ${game.i18n.format("l5r5e-combat-helper.kata.chat.assistanceApplied", {
-          targets: e.targets.join(", "),
-        })}`;
-      }
-      return null;
-    })
+    .map((e) => (EFFECT_SUMMARY_RENDERERS[e.type] ?? DEFAULT_RENDERER)(e))
     .filter(Boolean)
     .join("<br>");
 
@@ -70,6 +115,7 @@ export async function createKataSuccessMessage(
         extra: extraSuccesses,
         tn,
       })}</p>
+      ${tnReduction > 0 ? `<p><em>${game.i18n.format("l5r5e-combat-helper.kata.chat.tnReduced", { amount: tnReduction })}</em></p>` : ""}
       ${targetNames !== "—" ? `<p><em>${game.i18n.format("l5r5e-combat-helper.kata.chat.targets", { targets: targetNames })}</em></p>` : ""}
       ${effectLines ? `<div class="kata-effects">${effectLines}</div>` : ""}
       ${opportunityButton}
