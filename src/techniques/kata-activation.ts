@@ -433,9 +433,18 @@ async function handleOpportunityButtonClick(message, button) {
   };
   await executeKataOpportunity(oppData.kataName, ctx, 0);
 
+  // Optional fixed informational line (e.g. Coiling Serpent Style's
+  // un-automated weapon-lock half) — a plain i18n key on the kata
+  // definition, ignored by every kata that doesn't set it.
+  const kata = KATA_REGISTRY.find((k) => k.names.includes(oppData.kataName));
+  const noteLine = kata?.informationalNote
+    ? `<p><em>${game.i18n.localize(kata.informationalNote)}</em></p>`
+    : "";
+
   await ChatMessage.create({
     content: `<div class="l5r5e-combat-helper kata-opportunity-result">
       <p>⚡ <strong>${oppData.kataName}</strong>: ${game.i18n.localize("l5r5e-combat-helper.kata.chat.opportunityUsed")}</p>
+      ${noteLine}
     </div>`,
     speaker: ChatMessage.getSpeaker({ actor: attacker }),
   });

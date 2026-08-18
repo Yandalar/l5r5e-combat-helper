@@ -231,6 +231,7 @@
   "l5r5e-combat-helper.kata.chat.resistFail": "¡No resiste!",
   "l5r5e-combat-helper.kata.chat.resistResultDetail": "{successes} éxitos vs NO {tn}",
   "l5r5e-combat-helper.kata.chat.opportunityUsed": "(op) gastada — efecto activado",
+  "l5r5e-combat-helper.kata.chat.coilingSerpentWeaponLockNote": "⚠️ El bloqueo de arma de este Kata no está automatizado — aplicalo manualmente.",
   "l5r5e-combat-helper.kata.chat.passiveAvailable": "<strong>{attacker}</strong> tiene {opportunities} (op) — gastá para activar el efecto del Kata.",
   "l5r5e-combat-helper.kata.chat.passiveSpend": "Gastar {amount} (op) → +{amount} resistencia física",
   "l5r5e-combat-helper.kata.chat.passiveSpendSeverityBoost": "Gastar {amount} (op) → +{amount} severidad de crítico",

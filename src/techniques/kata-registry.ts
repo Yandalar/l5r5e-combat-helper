@@ -73,7 +73,8 @@
  *   },
  *   onSuccess: TechniqueEffect[],
  *   onExtraSuccesses?: { threshold: number, effects: TechniqueEffect[] },
- *   onOpportunity?: Array<{ ring: string, cost: number, effects: TechniqueEffect[] }>
+ *   onOpportunity?: Array<{ ring: string, cost: number, effects: TechniqueEffect[] }>,
+ *   informationalNote?: string
  * }} KataDefinition
  */
 
@@ -178,6 +179,37 @@ export const KATA_REGISTRY = [
         ],
       },
     ],
+  },
+  {
+    // PARTIAL AUTOMATION: only the Immobilized-condition half of this Kata's
+    // opportunity effect is automated. The weapon-lock half has no engine
+    // support (no effect type models "lock the target's weapon") and stays
+    // purely informational — surfaced via `informationalNote` (an i18n key,
+    // optional field ignored by every other kata entry) on the opportunity
+    // result chat card. See docs/katas-vault/ for the full design writeup of
+    // the gap.
+    names: ["Coiling Serpent Style", "Estilo de la serpiente enroscada"],
+    activation: {
+      skill: "melee",
+      ring: ["earth", "air", "water", "fire", "void"],
+      difficulty: 2,
+    },
+    onSuccess: [],
+    onOpportunity: [
+      {
+        ring: ["earth", "air", "water", "fire", "void"],
+        cost: 1,
+        effects: [
+          {
+            type: "condition",
+            target: "target",
+            statusId: "immobilized",
+            duration: "until_next_turn",
+          },
+        ],
+      },
+    ],
+    informationalNote: "l5r5e-combat-helper.kata.chat.coilingSerpentWeaponLockNote",
   },
 ];
 

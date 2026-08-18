@@ -231,6 +231,7 @@
   "l5r5e-combat-helper.kata.chat.resistFail": "Fails to resist!",
   "l5r5e-combat-helper.kata.chat.resistResultDetail": "{successes} successes vs TN {tn}",
   "l5r5e-combat-helper.kata.chat.opportunityUsed": "(op) spent — effect activated",
+  "l5r5e-combat-helper.kata.chat.coilingSerpentWeaponLockNote": "⚠️ This Kata's weapon-lock effect is not automated — apply it manually.",
   "l5r5e-combat-helper.kata.chat.passiveAvailable": "<strong>{attacker}</strong> has {opportunities} (op) — spend to activate kata effect.",
   "l5r5e-combat-helper.kata.chat.passiveSpend": "Spend {amount} (op) → +{amount} physical resistance",
   "l5r5e-combat-helper.kata.chat.passiveSpendSeverityBoost": "Spend {amount} (op) → +{amount} critical severity",
