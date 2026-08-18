@@ -128,6 +128,57 @@ export const KATA_REGISTRY = [
       },
     ],
   },
+  {
+    names: ["Lord Hida's Grip", "El abrazo del Señor Hida"],
+    activation: {
+      skill: "fitness",
+      ring: "void",
+      difficulty: "target.silhouette",
+      minDifficulty: 1,
+      range: [0, 1],
+      minTargetSilhouette: 3,
+    },
+    onSuccess: [
+      {
+        type: "condition",
+        target: "target",
+        statusId: "immobilized",
+        duration: "until_next_turn",
+      },
+      {
+        type: "assistance",
+        target: "all_against_target",
+        duration: "until_next_turn",
+      },
+    ],
+    onOpportunity: [
+      {
+        ring: "void",
+        cost: 1,
+        effects: [
+          {
+            type: "resistance_roll",
+            skill: "fitness",
+            difficulty: { source: "attacker_school_rank" },
+            onFailure: [
+              {
+                type: "damage",
+                target: "target",
+                formula: { source: "target_silhouette" },
+                ignoresArmor: true,
+              },
+              {
+                type: "condition",
+                target: "target",
+                statusId: "prone",
+                duration: "immediate",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 /**

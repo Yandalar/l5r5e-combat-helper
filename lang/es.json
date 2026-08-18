@@ -116,6 +116,7 @@
   "l5r5e-combat-helper.conditions.bleeding": "Hemorragia",
   "l5r5e-combat-helper.conditions.dazed": "Aturdido",
   "l5r5e-combat-helper.conditions.disoriented": "Desorientado",
+  "l5r5e-combat-helper.conditions.immobilized": "Inmovilizado",
   "l5r5e-combat-helper.conditions.prone": "Derribado",
   "l5r5e-combat-helper.conditions.dying_1": "Moribundo (1 ronda)",
   "l5r5e-combat-helper.conditions.dying_3": "Moribundo (3 rondas)",

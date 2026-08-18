@@ -202,22 +202,7 @@ describe("kata-registry integrity — cross-registry invariants", () => {
    * as each phase lands, the corresponding entry below should be removed. An
    * entry with no comment explaining *why* it's still unused is a smell.
    */
-  const KNOWN_UNUSED_EFFECT_TYPES: string[] = [
-    // `condition` (direct status application, e.g. "target becomes prone")
-    // is not used by any of the 4 registry entries that exist after Tasks
-    // 1-6 — the only condition-shaped effect so far is `condition_lock`
-    // (Bear's Swipe Style). Expected to be used starting in a later kata
-    // task.
-    "condition",
-    // `assistance` (support-style katas) is not used by Soaring Slice or
-    // any of the 3 passives. Expected to be used once support/social katas
-    // land.
-    "assistance",
-    // `resistance_roll` (opposed resistance check, e.g. Fitness TN X) is
-    // not used yet — no current kata forces a resistance roll. Expected to
-    // be used once a kata with a forced resistance roll lands.
-    "resistance_roll",
-  ];
+  const KNOWN_UNUSED_EFFECT_TYPES: string[] = [];
 
   it("every EFFECT_TYPE is used by the registry or explicitly listed as known-unused", () => {
     const usedTypes = new Set(WALKED.map((w) => w.effect.type));

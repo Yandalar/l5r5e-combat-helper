@@ -116,6 +116,7 @@
   "l5r5e-combat-helper.conditions.bleeding": "Bleeding",
   "l5r5e-combat-helper.conditions.dazed": "Dazed",
   "l5r5e-combat-helper.conditions.disoriented": "Disoriented",
+  "l5r5e-combat-helper.conditions.immobilized": "Immobilized",
   "l5r5e-combat-helper.conditions.prone": "Prone",
   "l5r5e-combat-helper.conditions.dying_1": "Dying (1 round)",
   "l5r5e-combat-helper.conditions.dying_3": "Dying (3 rounds)",
