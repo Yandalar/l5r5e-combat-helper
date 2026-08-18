@@ -415,6 +415,21 @@ export async function storeActiveKataEffect(actor, effectData) {
 }
 
 /**
+ * Removes an effect's associated status (if any), shared by
+ * processExpiredKataEffects and processEndOfTurnKataEffects (bug #10 fix:
+ * previously only the "until_next_turn" path honored `statusId` at all, so a
+ * timed condition keyed to "until_end_of_next_turn" was never removed).
+ */
+async function removeEffectStatus(actor, effect) {
+  if (!effect.statusId) return;
+  try {
+    await actor.toggleStatusEffect(effect.statusId, { active: false });
+  } catch (e) {
+    logWarn(`Could not remove effect ${effect.statusId} from ${actor.name}:`, e);
+  }
+}
+
+/**
  * Removes all activeKataEffects that expire when combatantActorId takes their turn.
  */
 export async function processExpiredKataEffects(combatantActorId) {
@@ -425,19 +440,13 @@ export async function processExpiredKataEffects(combatantActorId) {
     if (expiring.length === 0) continue;
 
     for (const effect of expiring) {
-      if (effect.statusId) {
-        try {
-          await actor.toggleStatusEffect(effect.statusId, { active: false });
-        } catch (e) {
-          console.warn(
-            `L5R5e Combat Helper | Could not remove effect ${effect.statusId} from ${actor.name}:`,
-            e,
-          );
-        }
-      }
-      if (effect.type === "resistance_buff" && effect.amount > 0) {
+      await removeEffectStatus(actor, effect);
+      // BUG #9 FIX: guard and arithmetic are sign-symmetric now — a negative
+      // resistance_buff (e.g. Striking as Water) must be able to expire back
+      // up to 0 from below, not just a positive buff decaying down to 0.
+      if (effect.type === "resistance_buff" && effect.amount !== 0) {
         const current = actor.getFlag(MODULE_ID, "resistanceBuff") || 0;
-        const newAmount = Math.max(0, current - effect.amount);
+        const newAmount = current - effect.amount; // no clamp — a negative buff must be able to return to 0 from below
         if (newAmount === 0) {
           await actor.unsetFlag(MODULE_ID, "resistanceBuff");
         } else {
@@ -469,6 +478,8 @@ export async function processEndOfTurnKataEffects(combatantActorId) {
     if (expiring.length === 0) continue;
 
     for (const effect of expiring) {
+      // BUG #10 FIX: honor statusId here too, same as processExpiredKataEffects.
+      await removeEffectStatus(actor, effect);
       if (effect.type === "critical_severity_boost") {
         await actor.unsetFlag(MODULE_ID, "pendingCriticalSeverityBoost");
         await removeCriticalSeverityBoostActiveEffect(actor);
@@ -489,17 +500,14 @@ export async function processEndOfTurnKataEffects(combatantActorId) {
 export async function clearAllKataEffects() {
   for (const actor of game.actors) {
     const effects = actor.getFlag(MODULE_ID, "activeKataEffects") || [];
-    if (effects.length === 0) continue;
-    for (const effect of effects) {
-      if (effect.statusId) {
-        try {
-          await actor.toggleStatusEffect(effect.statusId, { active: false });
-        } catch (e) {
-          logWarn("Could not remove effect on combat end:", e);
-        }
-      }
-    }
-    await actor.unsetFlag(MODULE_ID, "activeKataEffects");
+
+    // BUG #11 FIX: these three cleanups must run for every actor regardless
+    // of whether they have any `activeKataEffects` recorded — an actor whose
+    // effect record was already gone (e.g. a stray flag left by an earlier
+    // bug, or a flag set outside the activeKataEffects bookkeeping) must not
+    // keep an orphaned resistanceBuff/pendingTnReduction/
+    // pendingCriticalSeverityBoost flag past combat end. Moved above the
+    // `effects.length === 0` early-continue below.
     const hasBuff = actor.getFlag(MODULE_ID, "resistanceBuff");
     if (hasBuff) await actor.unsetFlag(MODULE_ID, "resistanceBuff");
     const hasTnReduction = actor.getFlag(MODULE_ID, "pendingTnReduction");
@@ -512,6 +520,18 @@ export async function clearAllKataEffects() {
       await actor.unsetFlag(MODULE_ID, "pendingCriticalSeverityBoost");
       await removeCriticalSeverityBoostActiveEffect(actor);
     }
+
+    if (effects.length === 0) continue;
+    for (const effect of effects) {
+      if (effect.statusId) {
+        try {
+          await actor.toggleStatusEffect(effect.statusId, { active: false });
+        } catch (e) {
+          logWarn("Could not remove effect on combat end:", e);
+        }
+      }
+    }
+    await actor.unsetFlag(MODULE_ID, "activeKataEffects");
     await removeConditionLockActiveEffects(actor);
   }
   await clearAllKataTokenAuras();

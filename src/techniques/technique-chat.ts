@@ -218,7 +218,14 @@ export async function createResistanceRollRequestMessage(
  */
 export async function createPassiveKataOpportunityCard(kata, attacker, opportunities, targetIds = [], rollMessageId = null) {
   const oppDef = kata.onOpportunity[0];
+  const costMin = oppDef.costMin ?? 1;
   const maxSpend = Math.min(opportunities, oppDef.costMax ?? opportunities);
+
+  // BUG #3 FIX: the player must have at least `costMin` opportunities to
+  // spend before the card is worth showing at all — previously the button
+  // range always started at 1 regardless of costMin, letting a player spend
+  // fewer opportunities than the kata requires.
+  if (opportunities < costMin) return;
 
   const effectType = oppDef.effects[0]?.type ?? "resistance_buff";
 
@@ -239,8 +246,8 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
     const spendKey = effectType === "critical_severity_boost"
       ? "l5r5e-combat-helper.kata.chat.passiveSpendSeverityBoost"
       : "l5r5e-combat-helper.kata.chat.passiveSpend";
-    buttons = Array.from({ length: maxSpend }, (_, i) => {
-      const n = i + 1;
+    buttons = Array.from({ length: maxSpend - costMin + 1 }, (_, i) => {
+      const n = costMin + i;
       return `<button class="kata-passive-opportunity-btn"
         data-kata-name="${kata.names[0]}"
         data-attacker-id="${attacker.id}"

@@ -13,6 +13,8 @@ import {
 } from "./technique-engine";
 import { removeTnReductionActiveEffect } from "./token-effects";
 import { resolveAttackWeapon } from "../core/weapon-utils";
+import { getSilhouette } from "../core/actor-utils";
+import { buildResistanceDialogParams, matchesPendingResistance } from "./resistance-roll";
 import {
   createResistanceResultMessage,
   createPassiveKataOpportunityCard,
@@ -46,7 +48,7 @@ export function registerKataActivationHandler() {
         "l5r5e-combat-helper",
         "pendingResistanceRoll",
       );
-      if (pending && pending.skill === l5rData.skillId) {
+      if (pending && matchesPendingResistance(l5rData, pending, actor.type)) {
         await handleResistanceRollResult(actor, l5rData, pending);
         return;
       }
@@ -77,8 +79,12 @@ export function registerKataActivationHandler() {
             );
             return;
           }
+          // BUG #8 FIX: use getSilhouette's full resolution chain (actor
+          // flag → system.silhouette → prototypeToken.width heuristic →
+          // default 2) instead of a bare system.silhouette read that always
+          // fell back to 1 for a real l5r5e actor.
           tn = Math.max(
-            parseInt(targets[0].system?.silhouette) || 1,
+            getSilhouette(targets[0]),
             kata.activation.minDifficulty || 1,
           );
         } else {
@@ -281,13 +287,8 @@ async function handleResistanceRollButtonClick(button) {
   );
 
   try {
-    new game.l5r5e.DicePickerDialog({
-      actor: target,
-      skillId: skill,
-      skillCatId: skillCatId,
-      difficulty,
-      difficultyHidden: false,
-    }).render(true);
+    const dialogParams = buildResistanceDialogParams(target, skill, skillCatId, difficulty);
+    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching resistance roll:",

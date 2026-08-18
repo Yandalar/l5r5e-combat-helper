@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { EFFECT_SUMMARY_RENDERERS, createKataSuccessMessage } from "../../src/techniques/technique-chat";
+import {
+  EFFECT_SUMMARY_RENDERERS,
+  createKataSuccessMessage,
+  createPassiveKataOpportunityCard,
+} from "../../src/techniques/technique-chat";
 import { EFFECT_TYPES } from "../../src/techniques/technique-engine";
 import { createMockActor } from "../helpers/foundry-mocks";
 import { expectModuleWarn } from "../helpers/setup";
@@ -153,5 +157,50 @@ describe("createKataSuccessMessage — effect rendering", () => {
     );
     const card = g().game.messages.at(-1);
     expect(card.content).not.toMatch(/reduced/i);
+  });
+});
+
+/**
+ * Bug #3 fix: the button range used to always start at 1 regardless of the
+ * opportunity definition's `costMin`, and the card was created even when the
+ * roll produced fewer opportunities than the kata requires. No registry
+ * entry today has costMin > 1, so this uses a synthetic kata fixture (the
+ * function only reads kata.onOpportunity[0], never the registry itself).
+ */
+describe("createPassiveKataOpportunityCard — honors costMin (bug #3 fix)", () => {
+  const kataWithCostMin = {
+    names: ["Test Passive Kata"],
+    onOpportunity: [
+      {
+        costMin: 2,
+        costMax: 4,
+        effects: [{ type: "resistance_buff" }],
+      },
+    ],
+  };
+
+  it("does not create a card at all when opportunities < costMin", async () => {
+    const attacker = createMockActor({ id: "att", name: "Att" });
+    await createPassiveKataOpportunityCard(kataWithCostMin, attacker, 1);
+    expect(g().game.messages).toHaveLength(0);
+  });
+
+  it("offers buttons from costMin..maxSpend, not 1..maxSpend", async () => {
+    const attacker = createMockActor({ id: "att", name: "Att" });
+    await createPassiveKataOpportunityCard(kataWithCostMin, attacker, 3);
+
+    const card = g().game.messages.at(-1);
+    // costMin=2, maxSpend=min(opportunities=3, costMax=4)=3 → only 2 and 3.
+    expect(card.content).toContain('data-amount="2"');
+    expect(card.content).toContain('data-amount="3"');
+    expect(card.content).not.toContain('data-amount="1"');
+  });
+
+  it("still creates the card when opportunities === costMin exactly", async () => {
+    const attacker = createMockActor({ id: "att", name: "Att" });
+    await createPassiveKataOpportunityCard(kataWithCostMin, attacker, 2);
+
+    const card = g().game.messages.at(-1);
+    expect(card.content).toContain('data-amount="2"');
   });
 });
