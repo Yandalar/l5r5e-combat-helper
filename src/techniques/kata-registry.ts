@@ -271,6 +271,30 @@ export const PASSIVE_KATA_REGISTRY = [
     ],
   },
   {
+    names: ["Striking as Water", "Golpe de Agua"],
+    activation: {
+      type: "passive_on_roll",
+      skills: ["melee", "ranged", "unarmed"],
+      ring: "water",
+    },
+    onOpportunity: [
+      {
+        ring: "water",
+        costMin: 1,
+        costMax: 5,
+        effects: [
+          {
+            type: "resistance_buff",
+            attribute: "physical",
+            target: "target",
+            amount: -1,
+            duration: "until_next_turn",
+          },
+        ],
+      },
+    ],
+  },
+  {
     names: ["Bear's Swipe Style", "Estilo de zarpazo del oso"],
     compendiumIds: ["Compendium.world.katas-generales.Item.CxYboNz5zjBgyKh9"],
     activation: {

@@ -297,12 +297,22 @@ async function applyResistanceRollEffect(effect, ctx, targets) {
 }
 
 /**
- * Reads `ctx.opportunitiesSpent` for its amount, falling back to
+ * Reads `ctx.opportunitiesSpent` for its magnitude, falling back to
  * `effect.amount ?? 1` — so a call from an active (onSuccess/onOpportunity
  * bucket-agnostic) context that never set opportunitiesSpent still works.
+ *
+ * TASK 8 FIX: the opportunitiesSpent branch used to return
+ * `ctx.opportunitiesSpent` verbatim, discarding `effect.amount`'s sign
+ * entirely — a positive buff (Striking as Earth, no `amount` field, implicit
+ * magnitude 1) happened to come out right by coincidence, but a *negative*
+ * buff (Striking as Water, `amount: -1`) came out positive instead of more
+ * negative when scaled by opportunities spent. Per-opportunity magnitude
+ * stays 1 (unchanged, matching Striking as Earth's already-shipped
+ * behavior) — only the sign now follows `effect.amount`.
  */
 async function applyResistanceBuffEffect(effect, ctx, targets) {
-  const amount = ctx.opportunitiesSpent > 0 ? ctx.opportunitiesSpent : (effect.amount ?? 1);
+  const sign = (effect.amount ?? 1) < 0 ? -1 : 1;
+  const amount = ctx.opportunitiesSpent > 0 ? sign * ctx.opportunitiesSpent : (effect.amount ?? 1);
   for (const target of targets) {
     const current = target.getFlag(MODULE_ID, "resistanceBuff") || 0;
     await target.setFlag(MODULE_ID, "resistanceBuff", current + amount);
