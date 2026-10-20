@@ -24,6 +24,7 @@ import {
   calculateDamage,
   getArmorResistance,
 } from "./core/damage-calculator";
+import { resolveAttackWeapon } from "./core/weapon-utils";
 import {
   createDamageMessage,
   createArmorBlockedMessage,
@@ -125,9 +126,7 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
   const hasAssistance = activeKataEffects.some((e) => e.type === "assistance");
 
   if (wasCritical) {
-    const weapon =
-      (l5rData.item?.type === "weapon" ? l5rData.item : null) ??
-      getEquippedWeapon(attacker);
+    const weapon = resolveAttackWeapon(l5rData, attacker);
     await createCriticalStrikeMessage(target, attacker, weapon, rollMessage.id);
     return;
   }
@@ -157,9 +156,7 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
   const finalDamage = Math.max(0, rawDamage + fireBonus - armorResistance);
 
   const opportunities = l5rData.summary?.opportunity || 0;
-  const equippedWeapon =
-    (l5rData.item?.type === "weapon" ? l5rData.item : null) ??
-    getEquippedWeapon(attacker);
+  const equippedWeapon = resolveAttackWeapon(l5rData, attacker);
 
   const originalTn = (l5rData.difficulty || 2) + airBonus;
 
@@ -191,25 +188,6 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     attackData,
     fireBonus,
   );
-}
-
-/**
- * Gets the first equipped or readied weapon from an actor.
- * Used to determine weapon deadliness for critical strikes.
- *
- * @param {Actor} actor
- * @returns {Item|null}
- */
-function getEquippedWeapon(actor) {
-  if (!actor || !actor.items) return null;
-
-  const weapons = actor.items.filter(
-    (item) =>
-      item.type === "weapon" &&
-      (item.system?.equipped === true || item.system?.readied === true),
-  );
-
-  return weapons.length > 0 ? weapons[0] : null;
 }
 
 /**

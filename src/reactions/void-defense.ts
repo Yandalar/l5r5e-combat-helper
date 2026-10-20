@@ -23,6 +23,7 @@ import {
 } from "../core/actor-utils";
 import { createVoidCriticalStrikeMessage } from "../ui/chat-messages";
 import { confirmDialog } from "../core/compat-utils";
+import { getEquippedWeapon } from "../core/weapon-utils";
 
 /**
  * Registers the hook responsible for extending the chat message
@@ -231,25 +232,4 @@ async function handleVoidNoDefense(
       }),
     );
   }
-}
-
-/**
- * Retrieves the first equipped or readied weapon from an actor.
- *
- * Used to determine the weapon deadliness value when generating
- * the Critical Strike that replaces the defended attack.
- *
- * @param {Actor} actor - Actor whose inventory will be inspected
- * @returns {Item|null} Equipped weapon item or null if none found
- */
-function getEquippedWeapon(actor) {
-  if (!actor || !actor.items) return null;
-
-  const weapons = actor.items.filter(
-    (item) =>
-      item.type === "weapon" &&
-      (item.system?.equipped === true || item.system?.readied === true),
-  );
-
-  return weapons.length > 0 ? weapons[0] : null;
 }

@@ -7,6 +7,16 @@ import {
   getVoidPoints,
   spendVoidPoint,
   revertFatigueDamage,
+  getSilhouette,
+  getStrife,
+  getMaxStrife,
+  getHonorRank,
+  getVigilance,
+  getSkillRank,
+  resolveFatigueField,
+  applyFatigue,
+  resolveStrifeField,
+  applyStrife,
 } from "../../src/core/actor-utils";
 import { createMockActor } from "../helpers/foundry-mocks";
 
@@ -149,5 +159,251 @@ describe("revertFatigueDamage", () => {
 
   it("throws when no fatigue field can be resolved", async () => {
     await expect(revertFatigueDamage({ system: {} } as any, 1)).rejects.toThrow();
+  });
+});
+
+describe("getSilhouette", () => {
+  it("prefers actor flag when present", () => {
+    const a = createMockActor({ flags: { "l5r5e-combat-helper": { silhouette: 4 } } });
+    expect(getSilhouette(a)).toBe(4);
+  });
+
+  it("falls back to system.silhouette if no flag", () => {
+    const a = createMockActor({ system: { silhouette: 3 } });
+    expect(getSilhouette(a)).toBe(3);
+  });
+
+  it("derives from prototypeToken.width >= 4 → 5", () => {
+    const a = createMockActor();
+    a.prototypeToken.width = 4;
+    expect(getSilhouette(a)).toBe(5);
+  });
+
+  it("derives from prototypeToken.width >= 3 → 4", () => {
+    const a = createMockActor();
+    a.prototypeToken.width = 3;
+    expect(getSilhouette(a)).toBe(4);
+  });
+
+  it("derives from prototypeToken.width >= 2 → 3", () => {
+    const a = createMockActor();
+    a.prototypeToken.width = 2;
+    expect(getSilhouette(a)).toBe(3);
+  });
+
+  it("defaults to 2 when nothing matches", () => {
+    const a = createMockActor({ prototypeToken: { width: 1 } } as any);
+    expect(getSilhouette(a)).toBe(2);
+  });
+
+  it("returns 2 for null actor", () => {
+    expect(getSilhouette(null)).toBe(2);
+  });
+
+  it("defaults to 2 when only base mock actor created", () => {
+    const a = createMockActor();
+    expect(getSilhouette(a)).toBe(2);
+  });
+});
+
+describe("getStrife", () => {
+  it("reads system.strife.value when present", () => {
+    const a = createMockActor({ system: { strife: { value: 3 } } });
+    expect(getStrife(a)).toBe(3);
+  });
+
+  it("falls back to flat numeric system.strife", () => {
+    expect(getStrife({ system: { strife: 2 } } as any)).toBe(2);
+  });
+
+  it("returns 0 when nothing matches", () => {
+    expect(getStrife({ system: {} } as any)).toBe(0);
+  });
+
+  it("returns 0 for null actor", () => {
+    expect(getStrife(null)).toBe(0);
+  });
+});
+
+describe("getMaxStrife", () => {
+  it("reads system.strife.max", () => {
+    const a = createMockActor({ system: { strife: { max: 5 } } });
+    expect(getMaxStrife(a)).toBe(5);
+  });
+
+  it("returns 0 when field is absent", () => {
+    expect(getMaxStrife({ system: {} } as any)).toBe(0);
+  });
+
+  it("returns 0 for null actor", () => {
+    expect(getMaxStrife(null)).toBe(0);
+  });
+});
+
+describe("getHonorRank", () => {
+  it("extracts tens digit: 0 → 0", () => {
+    expect(getHonorRank({ system: { social: { honor: 0 } } } as any)).toBe(0);
+  });
+
+  it("extracts tens digit: 9 → 0", () => {
+    expect(getHonorRank({ system: { social: { honor: 9 } } } as any)).toBe(0);
+  });
+
+  it("extracts tens digit: 10 → 1", () => {
+    expect(getHonorRank({ system: { social: { honor: 10 } } } as any)).toBe(1);
+  });
+
+  it("extracts tens digit: 55 → 5", () => {
+    expect(getHonorRank({ system: { social: { honor: 55 } } } as any)).toBe(5);
+  });
+
+  it("extracts tens digit: 100 → 10 (clamped)", () => {
+    expect(getHonorRank({ system: { social: { honor: 100 } } } as any)).toBe(10);
+  });
+
+  it("returns 0 for null actor", () => {
+    expect(getHonorRank(null)).toBe(0);
+  });
+});
+
+describe("getVigilance", () => {
+  it("reads system.vigilance.value when present", () => {
+    const a = createMockActor({ system: { vigilance: { value: 4 } } } as any);
+    expect(getVigilance(a)).toBe(4);
+  });
+
+  it("falls back to flat numeric system.vigilance", () => {
+    expect(getVigilance({ system: { vigilance: 3 } } as any)).toBe(3);
+  });
+
+  it("returns 0 when nothing matches", () => {
+    expect(getVigilance({ system: {} } as any)).toBe(0);
+  });
+
+  it("returns 0 for null actor", () => {
+    expect(getVigilance(null)).toBe(0);
+  });
+});
+
+describe("getSkillRank", () => {
+  it("reads PC skill rank from nested path system.skills.<category>.<skillId>", () => {
+    const a = createMockActor({
+      type: "character",
+      system: { skills: { martial: { fitness: 3 } } },
+    });
+    const map = { fitness: "martial" };
+    expect(getSkillRank(a, "fitness", map)).toBe(3);
+  });
+
+  it("reads NPC skill rank as flat category number", () => {
+    const a = createMockActor({
+      type: "npc",
+      system: { skills: { martial: 2 } },
+    });
+    const map = { fitness: "martial" };
+    expect(getSkillRank(a, "fitness", map)).toBe(2);
+  });
+
+  it("defaults to 'martial' category when skill not in map", () => {
+    const a = createMockActor({
+      type: "character",
+      system: { skills: { martial: { unknown_skill: 1 } } },
+    });
+    const map = {}; // skill not in map
+    expect(getSkillRank(a, "unknown_skill", map)).toBe(1);
+  });
+
+  it("returns 0 for null actor", () => {
+    expect(getSkillRank(null, "fitness", {})).toBe(0);
+  });
+});
+
+describe("resolveFatigueField", () => {
+  it("prefers system.fatigue.value", () => {
+    const a = createMockActor({ system: { fatigue: { value: 4 } } });
+    expect(resolveFatigueField(a)).toBe("system.fatigue.value");
+  });
+
+  it("falls back to flat numeric system.fatigue", () => {
+    expect(resolveFatigueField({ system: { fatigue: 3 } } as any)).toBe("system.fatigue");
+  });
+
+  it("falls back to system.attributes.fatigue", () => {
+    expect(resolveFatigueField({ system: { attributes: { fatigue: 2 } } } as any)).toBe(
+      "system.attributes.fatigue",
+    );
+  });
+
+  it("returns null when no field can be resolved", () => {
+    expect(resolveFatigueField({ system: {} } as any)).toBe(null);
+  });
+});
+
+describe("applyFatigue", () => {
+  it("adds delta to fatigue", async () => {
+    const a = createMockActor({ system: { fatigue: { value: 2 } } });
+    const result = await applyFatigue(a, 3);
+    expect(a.system.fatigue.value).toBe(5);
+    expect(result).toBe(5);
+  });
+
+  it("subtracts when delta is negative", async () => {
+    const a = createMockActor({ system: { fatigue: { value: 5 } } });
+    const result = await applyFatigue(a, -2);
+    expect(a.system.fatigue.value).toBe(3);
+    expect(result).toBe(3);
+  });
+
+  it("clamps at zero (does not go negative)", async () => {
+    const a = createMockActor({ system: { fatigue: { value: 2 } } });
+    const result = await applyFatigue(a, -10);
+    expect(a.system.fatigue.value).toBe(0);
+    expect(result).toBe(0);
+  });
+
+  it("throws when no fatigue field can be resolved", async () => {
+    await expect(applyFatigue({ system: {} } as any, 1)).rejects.toThrow();
+  });
+});
+
+describe("resolveStrifeField", () => {
+  it("prefers system.strife.value", () => {
+    const a = createMockActor({ system: { strife: { value: 2 } } });
+    expect(resolveStrifeField(a)).toBe("system.strife.value");
+  });
+
+  it("falls back to flat numeric system.strife", () => {
+    expect(resolveStrifeField({ system: { strife: 1 } } as any)).toBe("system.strife");
+  });
+
+  it("returns null when no field can be resolved", () => {
+    expect(resolveStrifeField({ system: {} } as any)).toBe(null);
+  });
+});
+
+describe("applyStrife", () => {
+  it("adds delta to strife", async () => {
+    const a = createMockActor({ system: { strife: { value: 1 } } });
+    const result = await applyStrife(a, 2);
+    expect(a.system.strife.value).toBe(3);
+    expect(result).toBe(3);
+  });
+
+  it("subtracts when delta is negative", async () => {
+    const a = createMockActor({ system: { strife: { value: 3 } } });
+    const result = await applyStrife(a, -1);
+    expect(a.system.strife.value).toBe(2);
+    expect(result).toBe(2);
+  });
+
+  it("clamps at zero (does not go negative)", async () => {
+    const a = createMockActor({ system: { strife: { value: 1 } } });
+    const result = await applyStrife(a, -10);
+    expect(a.system.strife.value).toBe(0);
+    expect(result).toBe(0);
+  });
+
+  it("throws when no strife field can be resolved", async () => {
+    await expect(applyStrife({ system: {} } as any, 1)).rejects.toThrow();
   });
 });

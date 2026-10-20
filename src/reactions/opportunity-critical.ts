@@ -17,6 +17,7 @@
 
 import { createCriticalStrikeMessage } from "../ui/chat-messages";
 import { isEarthStanceProtected } from "../stances/stance-effects";
+import { getEquippedWeapon } from "../core/weapon-utils";
 
 /**
  * Registers the renderChatMessage hook that attaches click listeners
@@ -166,22 +167,4 @@ async function handleOpportunityCriticalClick(message, button) {
       "l5r5e-combat-helper.chat.opportunityCritical.button",
     );
   }
-}
-
-/**
- * Returns the first equipped or readied weapon from an actor.
- * Fallback used when no weaponId was stored in the attack metadata.
- *
- * @param {Actor} actor
- * @returns {Item|null}
- */
-function getEquippedWeapon(actor) {
-  if (!actor?.items) return null;
-  return (
-    actor.items.find(
-      (item) =>
-        item.type === "weapon" &&
-        (item.system?.equipped === true || item.system?.readied === true),
-    ) || null
-  );
 }

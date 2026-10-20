@@ -6,6 +6,7 @@ import {
   clearAllKataEffects,
 } from "../../src/techniques/technique-engine";
 import { createMockActor } from "../helpers/foundry-mocks";
+import { expectModuleWarn } from "../helpers/setup";
 
 const NS = "l5r5e-combat-helper";
 
@@ -78,10 +79,10 @@ describe("processExpiredKataEffects", () => {
     expect(actor.getFlag(NS, "resistanceBuff")).toBe(2);
   });
 
-  it("BUG: a NEGATIVE resistance_buff is skipped entirely and never expires", async () => {
-    // The guard is `effect.amount > 0`, and the arithmetic is
-    // Math.max(0, current - amount). Striking as Water (Fase 1) needs a
-    // negative buff, so both must become sign-symmetric.
+  it("BUG #9 fix: a NEGATIVE resistance_buff expires back up to 0", async () => {
+    // The guard and arithmetic are now sign-symmetric (effect.amount !== 0,
+    // no Math.max(0, ...) clamp), so Striking as Water's negative buff can
+    // expire back toward 0 from below, same as a positive buff decays down.
     const actor = createMockActor();
     await actor.setFlag(NS, "resistanceBuff", -2);
     await storeActiveKataEffect(actor, {
@@ -90,7 +91,7 @@ describe("processExpiredKataEffects", () => {
     world(actor);
 
     await processExpiredKataEffects("att");
-    expect(actor.getFlag(NS, "resistanceBuff")).toBe(-2); // still there
+    expect(actor.getFlag(NS, "resistanceBuff")).toBeUndefined();
   });
 
   it("clears pendingTnReduction for an attack_tn_reduction effect", async () => {
@@ -151,7 +152,7 @@ describe("processEndOfTurnKataEffects", () => {
     expect(actor.getFlag(NS, "activeKataEffects")).toHaveLength(1);
   });
 
-  it("QUIRK: does NOT honor statusId, so a timed condition here is never removed", async () => {
+  it("BUG #10 fix: honors statusId, so a timed condition here IS removed", async () => {
     const actor = createMockActor({ statuses: ["dazed"] });
     await storeActiveKataEffect(actor, {
       type: "condition", statusId: "dazed", expiresEndOfTurnCombatant: "att",
@@ -159,8 +160,8 @@ describe("processEndOfTurnKataEffects", () => {
     world(actor);
 
     await processEndOfTurnKataEffects("att");
-    expect(actor.statuses.has("dazed")).toBe(true); // status survives
-    expect(actor.getFlag(NS, "activeKataEffects")).toEqual([]); // record does not
+    expect(actor.statuses.has("dazed")).toBe(false); // status removed
+    expect(actor.getFlag(NS, "activeKataEffects")).toEqual([]); // record does too
   });
 });
 
@@ -184,18 +185,19 @@ describe("clearAllKataEffects", () => {
     expect(actor.getFlag(NS, "pendingCriticalSeverityBoost")).toBeUndefined();
   });
 
-  it("QUIRK: an actor with no activeKataEffects keeps its stray pending flags", async () => {
-    // The `if (effects.length === 0) continue` guard short-circuits before the
-    // pending-flag cleanup, so an orphaned buff survives combat end.
+  it("BUG #11 fix: an actor with no activeKataEffects still loses its stray pending flags", async () => {
+    // The pending-flag cleanup now runs before the
+    // `if (effects.length === 0) continue` guard, so an orphaned buff no
+    // longer survives combat end.
     const actor = createMockActor();
     await actor.setFlag(NS, "resistanceBuff", 2);
     world(actor);
 
     await clearAllKataEffects();
-    expect(actor.getFlag(NS, "resistanceBuff")).toBe(2);
+    expect(actor.getFlag(NS, "resistanceBuff")).toBeUndefined();
   });
 
-  it("swallows a failing toggleStatusEffect silently (bare empty catch)", async () => {
+  it("swallows a failing toggleStatusEffect and logs a warning", async () => {
     const actor = createMockActor();
     actor.toggleStatusEffect = async () => {
       throw new Error("boom");
@@ -205,8 +207,7 @@ describe("clearAllKataEffects", () => {
     });
     world(actor);
 
-    // No declaration needed: the catch block logs nothing at all today.
-    // Fase 0.6 turns it into a logWarn, at which point this test declares it.
+    expectModuleWarn(/Could not remove effect on combat end/);
     await expect(clearAllKataEffects()).resolves.toBeUndefined();
     expect(actor.getFlag(NS, "activeKataEffects")).toBeUndefined();
   });

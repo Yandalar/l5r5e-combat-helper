@@ -21,6 +21,7 @@
 
 import { reverseCriticalEffect } from "../critical/critical-effects-application";
 import { confirmDialog, resolveMessageId } from "../core/compat-utils";
+import { getEquippedWeapon } from "../core/weapon-utils";
 
 /**
  * Registers the context menu hook that injects the Shattering Parry option
@@ -82,7 +83,7 @@ function addShatteringParryOption(html, options) {
       if (!(target.isOwner || game.user.isGM)) return false;
 
       // Must have at least one readied/equipped weapon
-      const weapon = getReadiedWeapon(target);
+      const weapon = getEquippedWeapon(target);
       if (!weapon) return false;
 
       return true;
@@ -103,7 +104,7 @@ function addShatteringParryOption(html, options) {
       const target = game.actors.get(parryData.targetId);
       if (!target) return;
 
-      const weapon = getReadiedWeapon(target);
+      const weapon = getEquippedWeapon(target);
       if (!weapon) {
         ui.notifications.warn(
           game.i18n.localize(
@@ -349,23 +350,4 @@ async function createShatteringParryMessage(target, weapon, parryData) {
     content,
     speaker: ChatMessage.getSpeaker({ actor: target }),
   });
-}
-
-
-/**
- * Returns the first readied or equipped weapon from the actor's inventory.
- *
- * @param {Actor} actor
- * @returns {Item|null}
- */
-function getReadiedWeapon(actor) {
-  if (!actor?.items) return null;
-
-  const weapons = actor.items.filter(
-    (item) =>
-      item.type === "weapon" &&
-      (item.system?.equipped === true || item.system?.readied === true),
-  );
-
-  return weapons.length > 0 ? weapons[0] : null;
 }

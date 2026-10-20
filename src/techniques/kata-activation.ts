@@ -12,6 +12,9 @@ import {
   applyPassiveKataOpportunity,
 } from "./technique-engine";
 import { removeTnReductionActiveEffect } from "./token-effects";
+import { resolveAttackWeapon } from "../core/weapon-utils";
+import { getSilhouette } from "../core/actor-utils";
+import { buildResistanceDialogParams, matchesPendingResistance } from "./resistance-roll";
 import {
   createResistanceResultMessage,
   createPassiveKataOpportunityCard,
@@ -45,7 +48,7 @@ export function registerKataActivationHandler() {
         "l5r5e-combat-helper",
         "pendingResistanceRoll",
       );
-      if (pending && pending.skill === l5rData.skillId) {
+      if (pending && matchesPendingResistance(l5rData, pending, actor.type)) {
         await handleResistanceRollResult(actor, l5rData, pending);
         return;
       }
@@ -76,8 +79,12 @@ export function registerKataActivationHandler() {
             );
             return;
           }
+          // BUG #8 FIX: use getSilhouette's full resolution chain (actor
+          // flag → system.silhouette → prototypeToken.width heuristic →
+          // default 2) instead of a bare system.silhouette read that always
+          // fell back to 1 for a real l5r5e actor.
           tn = Math.max(
-            parseInt(targets[0].system?.silhouette) || 1,
+            getSilhouette(targets[0]),
             kata.activation.minDifficulty || 1,
           );
         } else {
@@ -96,10 +103,24 @@ export function registerKataActivationHandler() {
         }
 
         const effectiveTn = Math.max(1, tn - tnReduction);
-        const success = totalSuccess >= effectiveTn;
         const extraSuccesses = Math.max(0, totalSuccess - effectiveTn);
 
-        await executeKata(kata, actor, targets, success, extraSuccesses, l5rData, message);
+        const ctx = {
+          attacker: actor,
+          targets,
+          extraSuccesses,
+          opportunitiesSpent: 0,
+          tn: effectiveTn,
+          totalSuccess,
+          weapon: resolveAttackWeapon(l5rData, actor),
+          resistance: null,
+          kata,
+          chosenCondition: null,
+          sourceMessageId: message.id,
+          l5rData,
+          tnReduction,
+        };
+        await executeKata(kata, ctx);
       } else {
         // ── Passive katas: trigger on matching regular martial rolls ──────────
         const martialSkills = ["melee", "ranged", "unarmed"];
@@ -203,13 +224,29 @@ async function handleResistanceRollResult(actor, l5rData, pending) {
     const attacker = pending.attackerId
       ? game.actors.get(pending.attackerId)
       : null;
+    const ctx = {
+      attacker,
+      targets: [actor],
+      extraSuccesses: 0,
+      opportunitiesSpent: 0,
+      tn: pending.difficulty,
+      totalSuccess,
+      weapon: null,
+      resistance: {
+        skill: pending.skill,
+        difficulty: pending.difficulty,
+        totalSuccess,
+        success,
+        shortfall: Math.max(0, pending.difficulty - totalSuccess),
+      },
+      kata: null,
+      chosenCondition: null,
+      sourceMessageId: null,
+      l5rData,
+    };
     for (const effect of pending.onFailure) {
-      const effectTargets = resolveTargets(
-        effect.target ?? "target",
-        attacker,
-        [actor],
-      );
-      await applyEffect(effect, attacker, effectTargets, 0);
+      const effectTargets = resolveTargets(effect.target ?? "target", ctx);
+      await applyEffect(effect, ctx, effectTargets);
     }
   }
 
@@ -250,13 +287,8 @@ async function handleResistanceRollButtonClick(button) {
   );
 
   try {
-    new game.l5r5e.DicePickerDialog({
-      actor: target,
-      skillId: skill,
-      skillCatId: skillCatId,
-      difficulty,
-      difficultyHidden: false,
-    }).render(true);
+    const dialogParams = buildResistanceDialogParams(target, skill, skillCatId, difficulty);
+    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching resistance roll:",
@@ -379,17 +411,40 @@ async function handleOpportunityButtonClick(message, button) {
     used: true,
   });
 
-  await executeKataOpportunity(
-    oppData.kataName,
-    oppData.attackerId,
-    oppData.targetIds,
-    oppData.extraSuccesses,
-    0,
-  );
+  const targets = (oppData.targetIds || [])
+    .map((id) => game.actors.get(id))
+    .filter(Boolean);
+  // kata and opportunitiesSpent are not known here (kataOpportunityData
+  // doesn't persist either) — executeKataOpportunity fills both in once it
+  // resolves the kata definition by name.
+  const ctx = {
+    attacker,
+    targets,
+    extraSuccesses: oppData.extraSuccesses,
+    opportunitiesSpent: 0,
+    tn: 0,
+    totalSuccess: 0,
+    weapon: null,
+    resistance: null,
+    kata: null,
+    chosenCondition: null,
+    sourceMessageId: message.id,
+    l5rData: null,
+  };
+  await executeKataOpportunity(oppData.kataName, ctx, 0);
+
+  // Optional fixed informational line (e.g. Coiling Serpent Style's
+  // un-automated weapon-lock half) — a plain i18n key on the kata
+  // definition, ignored by every kata that doesn't set it.
+  const kata = KATA_REGISTRY.find((k) => k.names.includes(oppData.kataName));
+  const noteLine = kata?.informationalNote
+    ? `<p><em>${game.i18n.localize(kata.informationalNote)}</em></p>`
+    : "";
 
   await ChatMessage.create({
     content: `<div class="l5r5e-combat-helper kata-opportunity-result">
       <p>⚡ <strong>${oppData.kataName}</strong>: ${game.i18n.localize("l5r5e-combat-helper.kata.chat.opportunityUsed")}</p>
+      ${noteLine}
     </div>`,
     speaker: ChatMessage.getSpeaker({ actor: attacker }),
   });

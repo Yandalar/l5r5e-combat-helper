@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { isEarthStanceProtected } from "../stances/stance-effects";
+import { getWeaponDeadliness } from "../core/weapon-utils";
 /**
  * Chat message generation helpers.
  *
@@ -235,10 +236,7 @@ export async function createArmorBlockedMessage(
 export async function createCriticalStrikeMessage(target, attacker, weapon, originRollId = null, reason = "incapacitated") {
   const i18n = game.i18n;
 
-  let deadliness = 5; // Default deadliness
-  if (weapon && weapon.system?.deadliness !== undefined) {
-    deadliness = parseInt(weapon.system.deadliness);
-  }
+  const deadliness = getWeaponDeadliness(weapon);
 
   const title = i18n.localize("l5r5e-combat-helper.chat.criticalStrike.title");
   const delivers = i18n.format(
@@ -322,10 +320,7 @@ export async function createVoidCriticalStrikeMessage(
 ) {
   const i18n = game.i18n;
 
-  let deadliness = 5; // Default deadliness
-  if (weapon && weapon.system?.deadliness !== undefined) {
-    deadliness = parseInt(weapon.system.deadliness) || 5;
-  }
+  const deadliness = getWeaponDeadliness(weapon);
 
   const title = i18n.localize(
     "l5r5e-combat-helper.chat.criticalStrike.titleVoid",

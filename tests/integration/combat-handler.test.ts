@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { registerCombatHandler, processAttack } from "../../src/combat-handler";
+import { createVoidCriticalStrikeMessage } from "../../src/ui/chat-messages";
 import { getHookCallback } from "../helpers/hooks";
 import {
   createMockActor,
@@ -169,16 +170,32 @@ describe("processAttack — target already at critical state", () => {
     });
   });
 
-  it("BUG #7: a deadliness-0 weapon yields severity 0 here, but 5 on the Void path", async () => {
-    // template.json defaults weapon deadliness to 0, and this path lacks the
-    // `|| 5` guard that createVoidCriticalStrikeMessage has.
+  it("BUG #7 FIXED: a deadliness-0 weapon now yields the fallback severity of 5 on both paths", async () => {
+    // template.json defaults weapon deadliness to 0. Before the fix, this path
+    // (createCriticalStrikeMessage, via processAttack) returned a raw 0 while
+    // createVoidCriticalStrikeMessage returned 5, via the `|| 5` guard it alone
+    // had. Both now go through the shared getWeaponDeadliness() helper, so
+    // they agree: a deadliness-0 weapon yields the fallback of 5 everywhere.
     const attacker = createMockActor({ id: "att", items: [createMockWeapon({ system: { damage: 4 } })] });
     const target = createMockActor({ id: "tgt", system: { endurance: 1, fatigue: { value: 5 } } });
     g().game.actors.push(attacker, target);
     const msg = attackMessage(attacker);
 
     await processAttack(msg, attacker, target, msg.rolls[0].l5r5e);
-    expect(g().game.messages.at(-1).getFlag(NS, "criticalStrike").weaponDeadliness).toBe(0);
+    expect(g().game.messages.at(-1).getFlag(NS, "criticalStrike").weaponDeadliness).toBe(5);
+  });
+
+  it("BUG #7 FIXED (Void path): a deadliness-0 weapon also yields the fallback severity of 5 via createVoidCriticalStrikeMessage", async () => {
+    const attacker = createMockActor({ id: "att2", items: [createMockWeapon({ system: { damage: 4, deadliness: 0 } })] });
+    const target = createMockActor({ id: "tgt2", system: { endurance: 10, fatigue: { value: 0 } } });
+    g().game.actors.push(attacker, target);
+
+    const weapon = attacker.items[0];
+    await createVoidCriticalStrikeMessage(target, attacker, 2, 1, weapon, "roll-2");
+
+    expect(g().game.messages.at(-1).getFlag(NS, "criticalStrike")).toMatchObject({
+      weaponDeadliness: 5,
+    });
   });
 });
 

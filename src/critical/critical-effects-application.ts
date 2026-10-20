@@ -24,6 +24,7 @@ import {
   isWeaponSharp,
   getActiveScarConfig,
 } from "./critical-effects-table";
+import { resolveConditionStatusId } from "../core/conditions";
 
 /**
  * Reverses the conditions applied by a condition-type critical effect.
@@ -72,24 +73,12 @@ async function removeConditionFromActor(
   ringUsed = null,
 ) {
   try {
-    let statusId = null;
-
-    if (conditionName === "lightly_wounded" && ringUsed) {
-      statusId = `lightly_wounded_${ringUsed}`;
-    } else if (conditionName === "severely_wounded" && ringUsed) {
-      statusId = `severely_wounded_${ringUsed}`;
-    } else if (conditionName === "bleeding") {
-      statusId = "bleeding";
-    } else if (conditionName === "dying") {
-      statusId = "dying";
-    } else if (conditionName === "dead" || conditionName === "unconscious") {
-      statusId = "unconscious";
-    } else if (conditionName === "incapacitated") {
-      statusId = "incapacitated";
-    }
+    const statusId = resolveConditionStatusId(conditionName, ringUsed);
 
     if (statusId) {
       await target.toggleStatusEffect(statusId, { active: false });
+    } else {
+      console.warn(`Unknown condition: ${conditionName}`);
     }
   } catch (error) {
     console.warn(
@@ -610,21 +599,7 @@ async function applyConditionToActor(
   extraData = {},
 ) {
   try {
-    let statusId = null;
-
-    if (conditionName === "lightly_wounded" && ringUsed) {
-      statusId = `lightly_wounded_${ringUsed}`;
-    } else if (conditionName === "severely_wounded" && ringUsed) {
-      statusId = `severely_wounded_${ringUsed}`;
-    } else if (conditionName === "bleeding") {
-      statusId = "bleeding";
-    } else if (conditionName === "dying") {
-      statusId = "dying";
-    } else if (conditionName === "dead" || conditionName === "unconscious") {
-      statusId = "unconscious";
-    } else if (conditionName === "incapacitated") {
-      statusId = "incapacitated";
-    }
+    const statusId = resolveConditionStatusId(conditionName, ringUsed);
 
     if (statusId) {
       await target.toggleStatusEffect(statusId, { active: true });

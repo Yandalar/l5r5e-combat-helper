@@ -1,21 +1,13 @@
 // @ts-nocheck
 
 /**
- * @typedef {{
- *   source: "fixed", value: number
- * } | {
- *   source: "attacker_ring", ring: string
- * } | {
- *   source: "target_silhouette"
- * } | {
- *   source: "extra_successes"
- * } | {
- *   source: "attacker_school_rank"
- * } | {
- *   source: "attacker_ring_plus_extra", ring: string
- * } | {
- *   source: "weapon_base_plus_extra"
- * }} Formula
+ * Formula sources are declared in FORMULA_RESOLVERS (technique-engine.ts);
+ * FORMULA_SOURCES = Object.keys(FORMULA_RESOLVERS) is the authoritative list.
+ * A Formula is `{ source: <one of FORMULA_SOURCES>, ...source-specific
+ * fields (e.g. `ring`, `skill`, `slot`), ...composable modifiers }`.
+ * Composable modifiers (any Formula may set these): `multiplier`, `bonus`,
+ * `min`, `max`, `plusExtraSuccesses`, `plusOpportunitiesSpent`.
+ * @typedef {Object} Formula
  */
 
 /**
@@ -81,7 +73,8 @@
  *   },
  *   onSuccess: TechniqueEffect[],
  *   onExtraSuccesses?: { threshold: number, effects: TechniqueEffect[] },
- *   onOpportunity?: Array<{ ring: string, cost: number, effects: TechniqueEffect[] }>
+ *   onOpportunity?: Array<{ ring: string, cost: number, effects: TechniqueEffect[] }>,
+ *   informationalNote?: string
  * }} KataDefinition
  */
 
@@ -117,7 +110,7 @@ export const KATA_REGISTRY = [
       {
         type: "damage",
         target: "target",
-        formula: { source: "weapon_base_plus_extra" },
+        formula: { source: "weapon_base", plusExtraSuccesses: true },
         ignoresArmor: false,
       },
     ],
@@ -136,27 +129,130 @@ export const KATA_REGISTRY = [
       },
     ],
   },
+  {
+    names: ["Lord Hida's Grip", "El abrazo del Señor Hida"],
+    activation: {
+      skill: "fitness",
+      ring: "void",
+      difficulty: "target.silhouette",
+      minDifficulty: 1,
+      range: [0, 1],
+      minTargetSilhouette: 3,
+    },
+    onSuccess: [
+      {
+        type: "condition",
+        target: "target",
+        statusId: "immobilized",
+        duration: "until_next_turn",
+      },
+      {
+        type: "assistance",
+        target: "all_against_target",
+        duration: "until_next_turn",
+      },
+    ],
+    onOpportunity: [
+      {
+        ring: "void",
+        cost: 1,
+        effects: [
+          {
+            type: "resistance_roll",
+            skill: "fitness",
+            difficulty: { source: "attacker_school_rank" },
+            onFailure: [
+              {
+                type: "damage",
+                target: "target",
+                formula: { source: "target_silhouette" },
+                ignoresArmor: true,
+              },
+              {
+                type: "condition",
+                target: "target",
+                statusId: "prone",
+                duration: "immediate",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    // PARTIAL AUTOMATION: only the Immobilized-condition half of this Kata's
+    // opportunity effect is automated. The weapon-lock half has no engine
+    // support (no effect type models "lock the target's weapon") and stays
+    // purely informational — surfaced via `informationalNote` (an i18n key,
+    // optional field ignored by every other kata entry) on the opportunity
+    // result chat card. See docs/katas-vault/ for the full design writeup of
+    // the gap.
+    names: ["Coiling Serpent Style", "Estilo de la serpiente enroscada"],
+    activation: {
+      skill: "melee",
+      ring: ["earth", "air", "water", "fire", "void"],
+      difficulty: 2,
+    },
+    onSuccess: [],
+    onOpportunity: [
+      {
+        ring: ["earth", "air", "water", "fire", "void"],
+        cost: 1,
+        effects: [
+          {
+            type: "condition",
+            target: "target",
+            statusId: "immobilized",
+            duration: "until_next_turn",
+          },
+        ],
+      },
+    ],
+    informationalNote: "l5r5e-combat-helper.kata.chat.coilingSerpentWeaponLockNote",
+  },
 ];
 
 /**
  * Maps skill IDs to their category in the l5r5e system.
- * Used when launching DicePickerDialog for resistance rolls.
+ * Used when launching DicePickerDialog for resistance rolls, and by
+ * `attacker_skill_rank` formulas in technique-engine.ts.
+ *
+ * BUG #5 FIX: `sentiment` was wrongly mapped to "social" (it is a Scholar
+ * skill), and `perform` doesn't exist as a skill id at all — the real one is
+ * `performance`, under "social". Total over the real skill tree, verified
+ * against systems/l5r5e/template.json.
  */
 export const SKILL_CATEGORY_MAP = {
+  // martial
   fitness: "martial",
-  unarmed: "martial",
   melee: "martial",
   ranged: "martial",
-  theology: "scholar",
+  unarmed: "martial",
+  meditation: "martial",
+  tactics: "martial",
+  // scholar
+  culture: "scholar",
+  government: "scholar",
   medicine: "scholar",
+  sentiment: "scholar",
+  theology: "scholar",
+  // social
   command: "social",
   courtesy: "social",
-  sentiment: "social",
-  perform: "social",
+  games: "social",
+  performance: "social",
+  // trade
+  commerce: "trade",
   labor: "trade",
   seafaring: "trade",
   skulduggery: "trade",
   survival: "trade",
+  // artisan
+  aesthetics: "artisan",
+  composition: "artisan",
+  design: "artisan",
+  smithing: "artisan",
 };
 
 /** @type {PassiveKataDefinition[]} */
@@ -201,6 +297,30 @@ export const PASSIVE_KATA_REGISTRY = [
             type: "critical_severity_boost",
             target: "target",
             duration: "until_end_of_next_turn",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    names: ["Striking as Water", "Golpe de Agua"],
+    activation: {
+      type: "passive_on_roll",
+      skills: ["melee", "ranged", "unarmed"],
+      ring: "water",
+    },
+    onOpportunity: [
+      {
+        ring: "water",
+        costMin: 1,
+        costMax: 5,
+        effects: [
+          {
+            type: "resistance_buff",
+            attribute: "physical",
+            target: "target",
+            amount: -1,
+            duration: "until_next_turn",
           },
         ],
       },
