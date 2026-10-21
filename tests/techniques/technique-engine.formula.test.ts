@@ -34,6 +34,15 @@ describe("resolveFormula", () => {
     expect(resolveFormula({ source: "fixed", value: 4 }, ctxFor(), null)).toBe(4);
   });
 
+  it("plus adds one or more other formulas", () => {
+    const a = createMockActor({ system: { rings: { water: 3 }, skills: { scholar: { medicine: 2 } } } });
+    const ctx = ctxFor({ attacker: a, extraSuccesses: 1 });
+    const waterPlusMedicine = { source: "attacker_ring", ring: "water", plus: { source: "attacker_skill_rank", skill: "medicine" } };
+    expect(resolveFormula(waterPlusMedicine, ctx, null)).toBe(5);
+    const withList = { source: "fixed", value: 1, plus: [{ source: "fixed", value: 2 }, { source: "extra_successes" }] };
+    expect(resolveFormula(withList, ctx, null)).toBe(4);
+  });
+
   it("attacker_ring reads system.rings[ring]", () => {
     const a = createMockActor({ system: { rings: { earth: 3 } } });
     expect(resolveFormula({ source: "attacker_ring", ring: "earth" }, ctxFor({ attacker: a }), null)).toBe(3);

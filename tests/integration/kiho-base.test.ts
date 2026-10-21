@@ -54,7 +54,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  KIHO_REGISTRY.splice(0, KIHO_REGISTRY.length);
+  for (const entry of [TEST_FIST, TEST_BREATH]) KIHO_REGISTRY.splice(KIHO_REGISTRY.indexOf(entry), 1);
   g().game.combat = null;
 });
 
