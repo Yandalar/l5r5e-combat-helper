@@ -129,11 +129,9 @@ describe("getArmorResistance", () => {
     expect(getArmorResistance({} as any)).toBe(0);
   });
 
-  it("PRE-EXISTING GAP: a negative resistanceBuff is passed through unclamped", () => {
-    // Striking as Water (Fase 1) needs a negative buff. Recorded here so the
-    // Fase 1 change to this behavior is visible as an intentional diff.
+  it("clamps a negative resistanceBuff at 0 (Striking as Water can't add damage)", () => {
     const target = createMockActor();
     target.getFlag = () => -2;
-    expect(getArmorResistance(target)).toBe(-2);
+    expect(getArmorResistance(target)).toBe(0);
   });
 });

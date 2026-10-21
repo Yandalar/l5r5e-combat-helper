@@ -11,6 +11,7 @@
  * - Launch the L5R5e roll system for Fitness check
  * - Prepare the roll with appropriate parameters
  */
+import { onRenderChatMessage } from "../core/compat-utils";
 
 /**
  * Registers the click event listener for critical strike roll buttons.
@@ -19,8 +20,7 @@
  * with the data-action="roll-critical" attribute.
  */
 export function registerCriticalStrikeRollHandler() {
-  Hooks.on("renderChatMessage", (message, html) => {
-    const el = html instanceof HTMLElement ? html : html[0];
+  onRenderChatMessage((message, el) => {
     el.querySelectorAll(".critical-strike-roll-button").forEach((btn) => {
       btn.addEventListener("click", async (event) => {
         event.preventDefault();

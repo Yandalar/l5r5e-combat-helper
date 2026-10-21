@@ -14,20 +14,20 @@
  * - Generates a Critical Strike message and launches the target's Fitness
  *   mitigation roll, reusing the existing critical strike infrastructure.
  */
+import { onRenderChatMessage } from "../core/compat-utils";
 
 import { createCriticalStrikeMessage } from "../ui/chat-messages";
 import { isEarthStanceProtected } from "../stances/stance-effects";
 import { getEquippedWeapon } from "../core/weapon-utils";
 
 /**
- * Registers the renderChatMessage hook that attaches click listeners
+ * Registers the chat-message render hook that attaches click listeners
  * to opportunity critical buttons in damage messages.
  *
  * @returns {void}
  */
 export function registerOpportunityCriticalHandler() {
-  Hooks.on("renderChatMessage", (message, html) => {
-    const el = html instanceof HTMLElement ? html : html[0];
+  onRenderChatMessage((message, el) => {
     el.querySelectorAll(".opportunity-critical-button").forEach((btn) => {
       btn.addEventListener("click", async (event) => {
         event.preventDefault();

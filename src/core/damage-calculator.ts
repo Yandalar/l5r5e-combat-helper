@@ -119,5 +119,6 @@ export function getArmorResistance(target) {
       ? target.getFlag("l5r5e-combat-helper", "resistanceBuff") || 0
       : 0;
 
-  return resistance + kataResistanceBuff;
+  // A negative buff (Striking as Water) lowers armor, never below 0
+  return Math.max(0, resistance + kataResistanceBuff);
 }

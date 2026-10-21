@@ -320,7 +320,7 @@ export const PASSIVE_KATA_REGISTRY = [
             attribute: "physical",
             target: "target",
             amount: -1,
-            duration: "until_next_turn",
+            duration: "until_end_of_next_turn",
           },
         ],
       },
@@ -351,3 +351,27 @@ export const PASSIVE_KATA_REGISTRY = [
     ],
   },
 ];
+
+/**
+ * Item names vary between compendiums and translations: "Lord Hida's Grip (Crab)",
+ * typographic apostrophes, accents, case. Compare on a normalized form without
+ * a trailing parenthetical (clan / source tag).
+ */
+export function normalizeKataName(name) {
+  return String(name ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[‘’ʼ`´]/g, "'")
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** Whether `item` (an embedded technique or `roll.l5r5e.item`) is this kata. */
+export function kataMatchesItem(kata, item) {
+  const source = item?._stats?.compendiumSource;
+  if (source && kata.compendiumIds?.includes(source)) return true;
+  const name = normalizeKataName(item?.name);
+  return !!name && kata.names.some((n) => normalizeKataName(n) === name);
+}

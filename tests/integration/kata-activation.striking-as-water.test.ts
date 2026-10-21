@@ -6,6 +6,7 @@ import { PASSIVE_KATA_REGISTRY } from "../../src/techniques/kata-registry";
 import {
   applyPassiveKataOpportunity,
   processExpiredKataEffects,
+  processEndOfTurnKataEffects,
 } from "../../src/techniques/technique-engine";
 import { getArmorResistance } from "../../src/core/damage-calculator";
 import { getHookCallback } from "../helpers/hooks";
@@ -116,7 +117,7 @@ describe("Striking as Water — passive kata end to end", () => {
 
   it(
     "spending 2 opportunities lowers the target's effective armor resistance by 2, " +
-      "and it returns to the original value once the attacker's next turn starts",
+      "and it returns to the original value once the attacker's next turn ends",
     async () => {
       target(foe);
 
@@ -146,9 +147,12 @@ describe("Striking as Water — passive kata end to end", () => {
       // ── 3. Real resulting armor resistance, via getArmorResistance ────────
       expect(getArmorResistance(foe)).toBe(1); // 3 - 2
 
-      // ── 4. Real expiry: the attacker's next turn starts, via the same
-      // processExpiredKataEffects the updateCombat hook calls. ─────────────
+      // ── 4. Real expiry: "until the end of your next turn". The start of
+      // the attacker's next turn does not end it; the end of that turn does
+      // (both via the functions the updateCombat hook calls). ─────────────
       await processExpiredKataEffects(attacker.id);
+      expect(getArmorResistance(foe)).toBe(1);
+      await processEndOfTurnKataEffects(attacker.id);
 
       expect(foe.getFlag(NS, "resistanceBuff")).toBeUndefined();
       expect(getArmorResistance(foe)).toBe(3); // back to original — not still reduced, not over-corrected
@@ -168,7 +172,16 @@ describe("Striking as Water — passive kata end to end", () => {
 
     expect(getArmorResistance(foe)).toBe(2); // 3 - 1
 
-    await processExpiredKataEffects(attacker.id);
+    await processEndOfTurnKataEffects(attacker.id);
     expect(getArmorResistance(foe)).toBe(3);
+  });
+
+  it("never lowers an unarmored target's resistance below 0 (no extra damage)", async () => {
+    foe.items.length = 0;
+    target(foe);
+    await onCreate(waterRollMessage(attacker, { opportunity: 2 }));
+    const kata = PASSIVE_KATA_REGISTRY.find((k) => k.names[0] === "Striking as Water");
+    await applyPassiveKataOpportunity(kata, attacker, 2, [foe], null);
+    expect(getArmorResistance(foe)).toBe(0);
   });
 });

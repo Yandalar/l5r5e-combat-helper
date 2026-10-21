@@ -2,7 +2,7 @@
 import { processAttack } from "./combat-handler";
 import { reverseCriticalEffect } from "./critical/critical-effects-application";
 import { revertFatigueDamage } from "./core/actor-utils";
-import { resolveMessageId } from "./core/compat-utils";
+import { resolveMessageId, contextMenuEntry } from "./core/compat-utils";
 
 const FLAG_NS = "l5r5e-combat-helper";
 
@@ -19,7 +19,7 @@ function addDifficultyChangeOption(html, options) {
 
   if (!optionsArray) return;
 
-  optionsArray.push({
+  optionsArray.push(contextMenuEntry({
     name: game.i18n.localize("l5r5e-combat-helper.contextMenu.changeDifficulty"),
     icon: '<i class="fas fa-sliders-h"></i>',
 
@@ -53,7 +53,7 @@ function addDifficultyChangeOption(html, options) {
         );
       }
     },
-  });
+  }));
 }
 
 async function handleDifficultyChange(rollMessage) {

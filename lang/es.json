@@ -243,5 +243,7 @@
   "l5r5e-combat-helper.kata.effect.tnReduction": "TN -{amount} (próximo ataque)",
   "l5r5e-combat-helper.kata.effect.criticalSeverityBoost": "Severidad de Crítico +{amount} (próximo crítico)",
   "l5r5e-combat-helper.kata.effect.conditionLock": "{condition} (bloqueada)",
-  "l5r5e-combat-helper.notifications.conditionNotPresent": "{target} no tiene la condición {condition} — no se puede bloquear."
+  "l5r5e-combat-helper.notifications.conditionNotPresent": "{target} no tiene la condición {condition} — no se puede bloquear.",
+  "l5r5e-combat-helper.notifications.targetTooSmall": "{kata} requiere un objetivo de silueta {silhouette} o más: {target} es demasiado pequeño. El kata no se aplicó.",
+  "l5r5e-combat-helper.notifications.noActiveGM": "Necesitás un DJ conectado para aplicar este efecto."
 }

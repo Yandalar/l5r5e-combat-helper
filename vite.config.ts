@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 
-export default defineConfig({
+// `vite build --mode release` (npm run build:release): no source map in the
+// published ZIP. Dev builds keep it for debugging in the browser.
+export default defineConfig(({ mode }) => ({
   build: {
     lib: {
       entry: "src/main.ts",
@@ -9,7 +11,7 @@ export default defineConfig({
       formats: ["es"],
     },
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: mode !== "release",
     minify: false,
   },
-});
+}));

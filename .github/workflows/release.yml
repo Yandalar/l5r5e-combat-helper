@@ -1,0 +1,38 @@
+# Push a tag vX.Y.Z (matching module.json and package.json) to publish a release:
+# tests, a build without source map, then a GitHub release on this repo with the
+# module ZIP, module.json, README, CHANGELOG and LICENSE.
+# Foundry's manifest URL: <repo>/releases/latest/download/module.json
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # foundry-vtt-types pulls some dependencies as git+ssh URLs (see
+      # package-lock.json); the runner has no SSH key, so fetch them over HTTPS.
+      - run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:release
+      - run: node tools/release.mjs --tag "${GITHUB_REF_NAME}"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=$(awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} /^---$/ {next} f' CHANGELOG.md)
+          gh release create "${GITHUB_REF_NAME}" release/*.zip release/module.json \
+            release/README.md release/CHANGELOG.md release/LICENSE \
+            --repo "${GITHUB_REPOSITORY}" --title "${GITHUB_REF_NAME}" \
+            --notes "${notes:-Release ${GITHUB_REF_NAME}}"
