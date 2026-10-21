@@ -9,7 +9,8 @@ All notable changes to this project will be documented in this file.
 - **Kihō base**:
   - Kihō rolled from the sheet are detected. A successful roll activates the kihō's enhancement (one per character; another kihō replaces it) and resolves its burst effect by bonus successes.
   - The card has an "End kihō" button, and combat end clears active kihō.
-  - Individual kihō are added in the next tickets.
+  - All 23 Core Rulebook kihō are recognized, show their enhancement on the card and resolve their burst effect: Freezing the Lifeblood, Ride the Water Dragon, Ki Protection, Water Fist, Way of the Seafoam, The Great Silence, Air Fist, Channel the Fire Dragon, Flame Fist, Way of the Falling Star, Cleansing Spirit, Earthen Fist, Way of the Earthquake, Way of the Edgeless Sword, Touch the Void Dragon and Death Touch. The burst of Breaking Blow, Earth Needs No Eyes, Riding the Clouds and Still the Elements is shown as a reminder; Way of the Willow, Grasp the Earth Dragon and The Body Is an Anvil come with the combat enhancements.
+  - Enhancement effects are described on the card and applied by hand for now.
 - Choice cards: a technique can let the attacker or the target pick an option, and the GM's client applies it.
 
 - **16 more katas from the Core Rulebook**:

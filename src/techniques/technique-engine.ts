@@ -108,6 +108,8 @@ export function resolveFormula(formula, ctx, target) {
     return 0;
   }
   let v = resolver(formula, ctx, target) * (formula.multiplier ?? 1);
+  // `plus`: other formulas added on top (Water Ring + Medicine, ...).
+  for (const extra of [formula.plus ?? []].flat()) v += resolveFormula(extra, ctx, target);
   if (formula.plusExtraSuccesses) v += ctx.extraSuccesses;
   if (formula.plusOpportunitiesSpent) v += ctx.opportunitiesSpent;
   v += formula.bonus ?? 0;

@@ -22,6 +22,15 @@ function ctxFor(overrides: any = {}): any {
 }
 
 describe("evaluatePredicate", () => {
+  it("target_is_minion is true only for minion NPCs", () => {
+    const minion = createMockActor({ type: "npc", system: { type: "minion" } });
+    const adversary = createMockActor({ type: "npc", system: { type: "adversary" } });
+    const pc = createMockActor({ type: "character" });
+    expect(evaluatePredicate({ target_is_minion: true }, ctxFor(), minion)).toBe(true);
+    expect(evaluatePredicate({ target_is_minion: true }, ctxFor(), adversary)).toBe(false);
+    expect(evaluatePredicate({ target_is_minion: false }, ctxFor(), pc)).toBe(true);
+  });
+
   it("undefined/null predicate is always true", () => {
     expect(evaluatePredicate(undefined, ctxFor())).toBe(true);
     expect(evaluatePredicate(null, ctxFor())).toBe(true);

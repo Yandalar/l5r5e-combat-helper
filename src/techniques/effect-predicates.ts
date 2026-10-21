@@ -22,6 +22,7 @@ export const PREDICATE_EVALUATORS = {
   attacker_has_condition: (v, ctx) => hasCondition(ctx.attacker, v),
   target_silhouette_gte: (v, ctx, t) => getSilhouette(t) >= v,
   target_is_incapacitated: (v, ctx, t) => isAtCriticalState(t) === v,
+  target_is_minion: (v, ctx, t) => (t?.type === "npc" && t.system?.type === "minion") === v,
   shortfall_lte: (v, ctx) => (ctx.resistance?.shortfall ?? Infinity) <= v,
   shortfall_gte: (v, ctx) => (ctx.resistance?.shortfall ?? -1) >= v,
   activation_shortfall_lte: (v, ctx) => Math.max(0, ctx.tn - ctx.totalSuccess) <= v,

@@ -123,10 +123,25 @@ describe("kata-registry integrity — effect walk", () => {
       (w) => [`${w.kataName} / ${w.bucket} / ${w.effect.type}`, w] as const,
     ),
   )("%s: every formula's source is a known FORMULA_SOURCE", (_label, w) => {
+    const check = (formula: AnyEffect) => {
+      expect(FORMULA_SOURCES).toContain(formula.source);
+      for (const extra of [formula.plus ?? []].flat()) check(extra);
+    };
     for (const field of FORMULA_FIELDS) {
-      if (typeof w.effect[field] === "object") expect(FORMULA_SOURCES).toContain(w.effect[field].source);
+      if (typeof w.effect[field] === "object") check(w.effect[field]);
     }
   });
+
+  it.each(WALKED.filter((w) => w.effect.type === "choice").map((w) => [w.kataName, w] as const))(
+    "%s: choice prompt and option labels have en+es i18n keys",
+    (_label, w) => {
+      const keys = [w.effect.prompt, ...w.effect.options.map((o: AnyEffect) => o.label)].filter(Boolean);
+      for (const key of keys) {
+        expect(EN, `missing en.json key ${key}`).toHaveProperty(key);
+        expect(ES, `missing es.json key ${key}`).toHaveProperty(key);
+      }
+    },
+  );
 
   it.each(WALKED.filter((w) => w.effect.ringDifficulty).map((w) => [`${w.kataName} / ${w.bucket} / ${w.effect.type}`, w] as const))(
     "%s: ringDifficulty keys are rings with numeric offsets",
@@ -173,6 +188,14 @@ describe("kata-registry integrity — activation.skill resolution", () => {
     "%s: activation.skill resolves via SKILL_CATEGORY_MAP",
     (_name, kata) => {
       expect(SKILL_CATEGORY_MAP).toHaveProperty(kata.activation.skill);
+    },
+  );
+
+  it.each(KIHOS.map((k) => [k.names[0], k] as const))(
+    "%s (kihō): activation.skill resolves via SKILL_CATEGORY_MAP",
+    (_name, kiho) => {
+      expect(SKILL_CATEGORY_MAP).toHaveProperty(kiho.activation.skill);
+      expect(typeof kiho.activation.difficulty).toBe("number");
     },
   );
 
@@ -256,8 +279,7 @@ describe("kata-registry integrity — cross-registry invariants", () => {
    * as each phase lands, the corresponding entry below should be removed. An
    * entry with no comment explaining *why* it's still unused is a smell.
    */
-  // Kihō base (K0) adds these for the kihō registry, which ticket K1 fills.
-  const KNOWN_UNUSED_EFFECT_TYPES: string[] = ["gain_void", "choice", "clear_technique_effects"];
+  const KNOWN_UNUSED_EFFECT_TYPES: string[] = [];
 
   it("every EFFECT_TYPE is used by the registry or explicitly listed as known-unused", () => {
     const usedTypes = new Set(WALKED.map((w) => w.effect.type));
