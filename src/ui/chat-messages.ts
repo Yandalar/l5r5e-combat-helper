@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { actorRef } from "../core/actor-refs";
 import { isEarthStanceProtected } from "../stances/stance-effects";
 import { getWeaponDeadliness } from "../core/weapon-utils";
 /**
@@ -233,10 +234,14 @@ export async function createArmorBlockedMessage(
  * @param {Item|null} weapon - Weapon used for the attack
  * @returns {Promise<void>}
  */
-export async function createCriticalStrikeMessage(target, attacker, weapon, originRollId = null, reason = "incapacitated") {
+export async function createCriticalStrikeMessage(target, attacker, weapon, originRollId = null, reason = "incapacitated", kata = {}) {
   const i18n = game.i18n;
 
-  const deadliness = getWeaponDeadliness(weapon);
+  // A kata may set its own severity (Heartpiercing Strike: deadliness +
+  // bonus successes) and a special Fitness TN for the mitigation roll.
+  const deadliness = kata.severity ?? getWeaponDeadliness(weapon);
+  const mitigationTn = kata.mitigationTn ?? null;
+  const ringDifficulty = kata.ringDifficulty ?? null;
 
   const title = i18n.localize("l5r5e-combat-helper.chat.criticalStrike.title");
   const delivers = i18n.format(
@@ -246,16 +251,23 @@ export async function createCriticalStrikeMessage(target, attacker, weapon, orig
       target: target.name,
     },
   );
-  const reasonLine = reason === "opportunity"
-    ? i18n.format("l5r5e-combat-helper.chat.criticalStrike.opportunitySpent", { attacker: attacker.name })
-    : i18n.format("l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated", { target: target.name });
+  const reasonLine = reason === "kata"
+    ? i18n.format("l5r5e-combat-helper.chat.criticalStrike.kataReason", { attacker: attacker.name, kata: kata.kataName ?? "" })
+    : reason === "opportunity"
+      ? i18n.format("l5r5e-combat-helper.chat.criticalStrike.opportunitySpent", { attacker: attacker.name })
+      : i18n.format("l5r5e-combat-helper.chat.criticalStrike.alreadyIncapacitated", { target: target.name });
   const alreadyIncap = reasonLine;
-  const weaponDead = i18n.format(
-    "l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness",
-    {
-      deadliness: deadliness,
-    },
+  const weaponDead = reason === "kata"
+    ? i18n.format("l5r5e-combat-helper.chat.criticalStrike.kataSeverity", { severity: deadliness })
+    : i18n.format("l5r5e-combat-helper.chat.criticalStrike.weaponDeadliness", { deadliness });
+  const ringTns = Object.entries(ringDifficulty ?? {}).map(
+    ([ring, d]) => `${i18n.localize(`l5r5e-combat-helper.rings.${ring}`)} ${Math.max(1, mitigationTn + d)}`,
   );
+  const mitigationLine = mitigationTn
+    ? `<p>${i18n.format("l5r5e-combat-helper.chat.criticalStrike.mitigationTn", {
+      tn: ringTns.length ? `${mitigationTn} (${ringTns.join(", ")})` : mitigationTn,
+    })}</p>`
+    : "";
   const buttonText = i18n.localize(
     "l5r5e-combat-helper.chat.criticalStrike.rollButton",
   );
@@ -266,6 +278,7 @@ export async function createCriticalStrikeMessage(target, attacker, weapon, orig
       <p>${delivers}</p>
       <p><em>${alreadyIncap}</em></p>
       <p>${weaponDead}</p>
+      ${mitigationLine}
       <button class="critical-strike-roll-button" data-action="roll-critical">
         ${buttonText}
       </button>
@@ -278,11 +291,13 @@ export async function createCriticalStrikeMessage(target, attacker, weapon, orig
     flags: {
       "l5r5e-combat-helper": {
         criticalStrike: {
-          targetId: target.id,
-          attackerId: attacker.id,
+          targetId: actorRef(target),
+          attackerId: actorRef(attacker),
           weaponDeadliness: deadliness,
           weaponId: weapon?.id || null,
           originRollId,
+          mitigationTn,
+          ringDifficulty,
         },
       },
     },
@@ -374,8 +389,8 @@ export async function createVoidCriticalStrikeMessage(
     flags: {
       "l5r5e-combat-helper": {
         criticalStrike: {
-          targetId: target.id,
-          attackerId: attacker.id,
+          targetId: actorRef(target),
+          attackerId: actorRef(attacker),
           weaponDeadliness: deadliness,
           weaponId: weapon?.id || null,
           originRollId,

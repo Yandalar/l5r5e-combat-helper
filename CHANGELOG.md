@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **16 more katas from the Core Rulebook**:
+  - Active: Iaijutsu Cut: Crossing Blade, Iaijutsu Cut: Rising Blade, Flowing Water Strike, Crimson Leaves Strike, Heartpiercing Strike and Pin the Fan.
+  - Passive (opportunity cards on a matching attack roll): Breath of Wind Style, Crashing Wave Style, Disappearing World Style, Iron in the Mountains Style, Rushing Avalanche Style, Spinning Blades Style, Pelting Hail Style, Open-Hand Style and Veiled Menace Style.
+  - Warrior's Resolve: send the technique to chat from the sheet and press "Use" to spend a Void point and remove fatigue (once per combat).
+  - Parts a kata can't automate (disarming, readying a sheathed weapon, moving, unchecked weapon properties) are shown as reminders on its card.
+- Resistance rolls with ring-dependent TNs ("TN 3 (Earth 4, Fire 1)"); the TN is computed from the ring the target rolls with.
+- Katas can trigger critical strikes with their own severity and, for Heartpiercing Strike, their own Fitness TN, through the usual critical strike card.
+- Opportunity result cards list what each effect did.
+
+### Changed
+
+- Coiling Serpent Style: Immobilized costs 2 opportunities per target, and the spend button only appears when there are enough opportunities.
+
+### Fixed
+
+- Critical strikes, mitigation, Shattering Parry, Void defense, opportunity criticals, difficulty changes and target reassignment now follow unlinked tokens instead of the sidebar actor that shares their id.
+
 ## [1.1.0] - 2026-10-21
 
 ### Added

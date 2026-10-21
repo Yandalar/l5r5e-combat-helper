@@ -12,16 +12,22 @@ import {
   applyPassiveKataOpportunity,
 } from "./technique-engine";
 import { removeTnReductionActiveEffect } from "./token-effects";
-import { resolveAttackWeapon } from "../core/weapon-utils";
-import { getSilhouette } from "../core/actor-utils";
+import { resolveAttackWeapon, getSecondaryWeapon } from "../core/weapon-utils";
+import { getSilhouette, getVigilance } from "../core/actor-utils";
+import { checkAttackSuccess } from "../core/damage-calculator";
+import { getAirTNBonus } from "../stances/stance-effects";
+import { evaluatePredicate } from "./effect-predicates";
+import { resolveFormula } from "./technique-engine";
 import { buildResistanceDialogParams, matchesPendingResistance } from "./resistance-roll";
 import {
   createResistanceResultMessage,
   createPassiveKataOpportunityCard,
+  renderEffectLines,
 } from "./technique-chat";
 import { onRenderChatMessage, isResponsibleClient, rollTargetActors } from "../core/compat-utils";
 import { actorRef, resolveActor, rollActor } from "../core/actor-refs";
 import { runAsGM, registerGmRelay, senderCanActFor } from "../core/gm-relay";
+import { registerManualKataHandler } from "./manual-katas";
 
 /**
  * Registers all kata-related hooks:
@@ -35,6 +41,7 @@ export function registerKataActivationHandler() {
     kataOpportunity: applyKataOpportunity,
     passiveKataOpportunity: applyPassiveKataOpportunityFromCard,
   });
+  registerManualKataHandler();
 
   // ── 1. Detect kata rolls and resistance roll completions ────────────────────
   Hooks.on("createChatMessage", async (message) => {
@@ -83,7 +90,21 @@ export function registerKataActivationHandler() {
         }
 
         let tn;
-        if (kata.activation.difficulty === "target.silhouette") {
+        const needsTarget = ["target.silhouette", "target.vigilance"].includes(kata.activation.difficulty);
+        if (needsTarget && targets.length === 0) {
+          ui.notifications.warn(
+            game.i18n.localize("l5r5e-combat-helper.notifications.noTargets"),
+          );
+          return;
+        }
+        if (kata.activation.difficulty === "target.vigilance") {
+          // Iaijutsu Cut: Rising Blade — TN equals the target's Vigilance.
+          tn = Math.max(getVigilance(targets[0]), kata.activation.minDifficulty || 1);
+        } else if (kata.activation.difficulty === "roll") {
+          // TN the module can't compute (Pin the Fan: Vigilance + range) —
+          // trust the TN set in the dice picker.
+          tn = l5rData.difficulty || 2;
+        } else if (kata.activation.difficulty === "target.silhouette") {
           if (targets.length === 0) {
             ui.notifications.warn(
               game.i18n.localize("l5r5e-combat-helper.notifications.noTargets"),
@@ -153,8 +174,9 @@ export function registerKataActivationHandler() {
           if (!ringMatch) continue;
           const hasKata = actor.items.some((item) => kataMatchesItem(kata, item));
           if (!hasKata) continue;
-          const currentTargetIds = rollTargetActors(message, l5rData).map((a) => actorRef(a));
-          await createPassiveKataOpportunityCard(kata, actor, opportunities, currentTargetIds, message.id);
+          const roll = passiveRollContext(kata, actor, message, l5rData);
+          if (!roll) continue;
+          await createPassiveKataOpportunityCard(kata, actor, opportunities, roll.targetIds, message.id, roll);
         }
       }
     } catch (error) {
@@ -216,11 +238,62 @@ export function registerKataActivationHandler() {
 
 // ── Private handlers ────────────────────────────────────────────────────────
 
+/**
+ * What a passive kata card needs from the roll that triggered it, or null
+ * when the kata doesn't apply to this roll: no branch whose `when` holds,
+ * `requiresSuccess` on a miss, `requiresSecondaryWeapon` without one.
+ * The TN includes the first target's Air-stance bonus, as in combat-handler.
+ */
+function passiveRollContext(kata, actor, message, l5rData) {
+  const targets = rollTargetActors(message, l5rData);
+  const first = targets[0] ?? null;
+  const airBonus = first ? getAirTNBonus(first) : 0;
+  const weapon = resolveAttackWeapon(l5rData, actor);
+  const tn = (l5rData.difficulty || 2) + airBonus;
+  const totalSuccess = l5rData.summary?.totalSuccess || 0;
+
+  if (kata.requiresSuccess && !checkAttackSuccess(l5rData, airBonus)) return null;
+  if (kata.requiresSecondaryWeapon && !getSecondaryWeapon(actor, weapon)) return null;
+
+  const ctx = {
+    attacker: actor,
+    targets,
+    extraSuccesses: Math.max(0, totalSuccess - tn),
+    opportunitiesSpent: 0,
+    tn,
+    totalSuccess,
+    weapon,
+    resistance: null,
+    kata,
+    chosenCondition: null,
+    sourceMessageId: message.id,
+    l5rData,
+  };
+  const oppIndex = kata.onOpportunity.findIndex((o) => evaluatePredicate(o.when, ctx, first));
+  if (oppIndex < 0) return null;
+  const oppDef = kata.onOpportunity[oppIndex];
+  const cost = (v) => (v && typeof v === "object" ? resolveFormula(v, ctx, first) : v);
+
+  return {
+    targetIds: targets.map((a) => actorRef(a)),
+    oppIndex,
+    costMin: cost(oppDef.costMin),
+    costMax: cost(oppDef.costMax),
+    weaponId: weapon?.id ?? null,
+    skillId: l5rData.skillId,
+    tn,
+    totalSuccess,
+    targetStance: first?.system?.stance ?? null,
+  };
+}
+
 async function handleResistanceRollResult(actor, l5rData, pending) {
   await actor.unsetFlag("l5r5e-combat-helper", "pendingResistanceRoll");
 
   const totalSuccess = l5rData.summary?.totalSuccess || 0;
-  const success = totalSuccess >= pending.difficulty;
+  // "TN 3 (Earth 4, Fire 1)": the TN depends on the ring the target rolled with.
+  const difficulty = Math.max(1, pending.difficulty + (pending.ringDifficulty?.[l5rData.stance] ?? 0));
+  const success = totalSuccess >= difficulty;
 
   if (!success && pending.onFailure?.length) {
     const attacker = resolveActor(pending.attackerId);
@@ -229,15 +302,15 @@ async function handleResistanceRollResult(actor, l5rData, pending) {
       targets: [actor],
       extraSuccesses: 0,
       opportunitiesSpent: 0,
-      tn: pending.difficulty,
+      tn: difficulty,
       totalSuccess,
       weapon: null,
       resistance: {
         skill: pending.skill,
-        difficulty: pending.difficulty,
+        difficulty,
         totalSuccess,
         success,
-        shortfall: Math.max(0, pending.difficulty - totalSuccess),
+        shortfall: Math.max(0, difficulty - totalSuccess),
       },
       kata: null,
       chosenCondition: null,
@@ -253,8 +326,9 @@ async function handleResistanceRollResult(actor, l5rData, pending) {
   await createResistanceResultMessage(
     actor,
     totalSuccess,
-    pending.difficulty,
+    difficulty,
     success,
+    pending.failureNote ?? null,
   );
 }
 
@@ -320,6 +394,25 @@ async function handlePassiveKataButtonClick(message, button) {
     return;
   }
 
+  // "Choose additional characters" (Pelting Hail Style): the clicker's
+  // current targets, minus the attack's own, up to the amount spent.
+  const kata = PASSIVE_KATA_REGISTRY.find((k) => k.names.includes(button.dataset.kataName));
+  const oppDef = kata?.onOpportunity?.[passiveData.oppIndex ?? 0];
+  let pickedTargetIds = null;
+  if (oppDef?.targetMode === "picked") {
+    const original = new Set(passiveData.targetIds ?? []);
+    pickedTargetIds = [...(game.user.targets ?? [])]
+      .map((t) => t.actor)
+      .filter(Boolean)
+      .map((a) => actorRef(a))
+      .filter((ref) => !original.has(ref))
+      .slice(0, parseInt(button.dataset.amount));
+    if (pickedTargetIds.length === 0) {
+      ui.notifications.warn(game.i18n.localize("l5r5e-combat-helper.notifications.pickExtraTargets"));
+      return;
+    }
+  }
+
   // Disable all buttons on this card to prevent double-spend
   const card = button.closest(".kata-passive-opportunity");
   const buttons = card ? [...card.querySelectorAll("button")] : [button];
@@ -330,6 +423,8 @@ async function handlePassiveKataButtonClick(message, button) {
     kataName: button.dataset.kataName,
     amount: parseInt(button.dataset.amount),
     condition: button.dataset.condition ?? null,
+    stance: button.dataset.stance ?? null,
+    pickedTargetIds,
   });
   if (!sent) buttons.forEach((b) => (b.disabled = false));
 }
@@ -339,7 +434,7 @@ async function handlePassiveKataButtonClick(message, button) {
  * client when needed): marks the card used, applies the effect, deducts the
  * spent opportunities from the linked damage message and posts the result.
  */
-export async function applyPassiveKataOpportunityFromCard({ messageId, kataName, amount, condition }, senderId) {
+export async function applyPassiveKataOpportunityFromCard({ messageId, kataName, amount, condition, stance = null, pickedTargetIds = null }, senderId) {
   const message = game.messages.get(messageId);
   const passiveData = message?.getFlag("l5r5e-combat-helper", "passiveKataData");
   if (!passiveData || passiveData.used) return;
@@ -356,11 +451,18 @@ export async function applyPassiveKataOpportunityFromCard({ messageId, kataName,
   });
 
   const chosenCondition = condition ?? null;
-  const targetActors = (passiveData.targetIds || [])
+  const targetActors = (pickedTargetIds ?? passiveData.targetIds ?? [])
     .map((ref) => resolveActor(ref))
     .filter(Boolean);
 
-  await applyPassiveKataOpportunity(kata, attacker, amount, targetActors, chosenCondition);
+  const summaries = await applyPassiveKataOpportunity(kata, attacker, amount, targetActors, chosenCondition, {
+    oppIndex: passiveData.oppIndex ?? 0,
+    weapon: passiveData.weaponId ? attacker.items?.get(passiveData.weaponId) ?? null : null,
+    skillId: passiveData.skillId ?? null,
+    tn: passiveData.tn ?? 0,
+    totalSuccess: passiveData.totalSuccess ?? 0,
+    chosenStance: stance,
+  });
 
   // Deduct spent opportunities from the linked damage message(s) so the
   // critical strike button can gate on remaining opportunities.
@@ -375,9 +477,21 @@ export async function applyPassiveKataOpportunityFromCard({ messageId, kataName,
     }
   }
 
-  const effectType = kata.onOpportunity[0]?.effects[0]?.type ?? "resistance_buff";
+  const effectType = kata.onOpportunity[passiveData.oppIndex ?? 0]?.effects[0]?.type ?? "resistance_buff";
   let activatedKey;
   let formatParams;
+  if (!["resistance_buff", "critical_severity_boost", "condition_lock"].includes(effectType)) {
+    // Generic result: what each effect actually did.
+    const lines = renderEffectLines(summaries);
+    await ChatMessage.create({
+      content: `<div class="l5r5e-combat-helper kata-passive-result">
+        <p>⚡ <strong>${kata.names[0]}</strong>: ${game.i18n.format("l5r5e-combat-helper.kata.chat.passiveSpent", { amount })}</p>
+        ${lines ? `<div class="kata-effects">${lines}</div>` : ""}
+      </div>`,
+      speaker: ChatMessage.getSpeaker({ actor: attacker }),
+    });
+    return;
+  }
   if (effectType === "critical_severity_boost") {
     activatedKey = "l5r5e-combat-helper.kata.chat.passiveActivatedSeverityBoost";
     formatParams = { amount };
@@ -457,19 +571,20 @@ export async function applyKataOpportunity({ messageId }, senderId) {
     opportunitiesSpent: 0,
     tn: 0,
     totalSuccess: 0,
-    weapon: null,
+    weapon: oppData.weaponId ? attacker.items?.get(oppData.weaponId) ?? null : null,
     resistance: null,
     kata: null,
     chosenCondition: null,
     sourceMessageId: message.id,
     l5rData: null,
   };
-  await executeKataOpportunity(oppData.kataName, ctx, 0);
+  const summaries = (await executeKataOpportunity(oppData.kataName, ctx, 0)) ?? [];
 
   // Optional fixed informational line (e.g. Coiling Serpent Style's
   // un-automated weapon-lock half) — a plain i18n key on the kata
   // definition, ignored by every kata that doesn't set it.
   const kata = KATA_REGISTRY.find((k) => k.names.includes(oppData.kataName));
+  const effectLines = renderEffectLines(summaries);
   const noteLine = kata?.informationalNote
     ? `<p><em>${game.i18n.localize(kata.informationalNote)}</em></p>`
     : "";
@@ -477,6 +592,7 @@ export async function applyKataOpportunity({ messageId }, senderId) {
   await ChatMessage.create({
     content: `<div class="l5r5e-combat-helper kata-opportunity-result">
       <p>⚡ <strong>${oppData.kataName}</strong>: ${game.i18n.localize("l5r5e-combat-helper.kata.chat.opportunityUsed")}</p>
+      ${effectLines ? `<div class="kata-effects">${effectLines}</div>` : ""}
       ${noteLine}
     </div>`,
     speaker: ChatMessage.getSpeaker({ actor: attacker }),

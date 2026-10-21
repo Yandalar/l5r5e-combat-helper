@@ -14,6 +14,7 @@
  * - Generates a Critical Strike message and launches the target's Fitness
  *   mitigation roll, reusing the existing critical strike infrastructure.
  */
+import { resolveActor } from "../core/actor-refs";
 import { onRenderChatMessage } from "../core/compat-utils";
 
 import { createCriticalStrikeMessage } from "../ui/chat-messages";
@@ -90,7 +91,7 @@ async function handleOpportunityCriticalClick(message, button) {
       return;
     }
 
-    const attacker = game.actors.get(attackData.attackerId);
+    const attacker = resolveActor(attackData.attackerId);
     if (!attacker) {
       ui.notifications.error(
         game.i18n.localize(
@@ -108,7 +109,7 @@ async function handleOpportunityCriticalClick(message, button) {
       return;
     }
 
-    const target = game.actors.get(attackData.targetId);
+    const target = resolveActor(attackData.targetId);
     if (!target) {
       ui.notifications.error(
         game.i18n.localize("l5r5e-combat-helper.notifications.targetNotFound"),

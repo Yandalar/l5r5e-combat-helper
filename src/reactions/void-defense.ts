@@ -15,6 +15,7 @@
  * - Generate a Critical Strike notification
  */
 
+import { resolveActor } from "../core/actor-refs";
 import {
   getVoidPoints,
   spendVoidPoint,
@@ -109,7 +110,7 @@ function addVoidOption(html, options) {
       const attackData = message.getFlag("l5r5e-combat-helper", "attackData");
       if (!attackData || attackData.resolved) return false;
 
-      const target = game.actors.get(attackData.targetId);
+      const target = resolveActor(attackData.targetId);
       if (!target) return false;
 
       if (!(target.isOwner || game.user.isGM)) return false;
@@ -145,8 +146,8 @@ function addVoidOption(html, options) {
       const message = game.messages.get(messageId);
       const attackData = message.getFlag("l5r5e-combat-helper", "attackData");
 
-      const target = game.actors.get(attackData.targetId);
-      const attacker = game.actors.get(attackData.attackerId);
+      const target = resolveActor(attackData.targetId);
+      const attacker = resolveActor(attackData.attackerId);
 
       const voidBefore = getVoidPoints(target);
 

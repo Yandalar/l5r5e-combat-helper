@@ -19,6 +19,7 @@
  *    mark the session flag as used, and launch a new mitigation roll.
  */
 
+import { resolveActor } from "../core/actor-refs";
 import { reverseCriticalEffect } from "../critical/critical-effects-application";
 import { confirmDialog, resolveMessageId, contextMenuEntry } from "../core/compat-utils";
 import { getEquippedWeapon } from "../core/weapon-utils";
@@ -76,7 +77,7 @@ function addShatteringParryOption(html, options) {
       // Already used Shattering Parry for this critical
       if (parryData.used) return false;
 
-      const target = game.actors.get(parryData.targetId);
+      const target = resolveActor(parryData.targetId);
       if (!target) return false;
 
       // Only owner or GM
@@ -101,7 +102,7 @@ function addShatteringParryOption(html, options) {
 
       if (!parryData) return;
 
-      const target = game.actors.get(parryData.targetId);
+      const target = resolveActor(parryData.targetId);
       if (!target) return;
 
       const weapon = getEquippedWeapon(target);
@@ -185,6 +186,8 @@ async function handleShatteringParry(
       target,
       parryData.weaponDeadliness,
       parryData.criticalMessageId,
+      parryData.mitigationTn ?? null,
+      parryData.ringDifficulty ?? null,
     );
   } catch (error) {
     console.error("L5R5e Combat Helper | Shattering Parry error:", error);
@@ -282,18 +285,23 @@ async function launchNewMitigationRoll(
   target,
   weaponDeadliness,
   criticalMessageId,
+  mitigationTn = null,
+  ringDifficulty = null,
 ) {
   // Re-arm the pending mitigation flag so critical-mitigation.js can pick it up
   await target.setFlag("l5r5e-combat-helper", "pendingCriticalMitigation", {
     weaponDeadliness,
     criticalMessageId,
+    mitigationTn,
+    ringDifficulty,
     isShatteringParryReroll: true,
   });
 
   const isNpc = target.type === "npc";
+  const difficulty = mitigationTn ?? 1;
   const dialogParams = isNpc
-    ? { actor: target, skillId: "martial", difficulty: 1, difficultyHidden: false }
-    : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty: 1, difficultyHidden: false };
+    ? { actor: target, skillId: "martial", difficulty, difficultyHidden: false }
+    : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty, difficultyHidden: false };
 
   try {
     new game.l5r5e.DicePickerDialog(dialogParams).render(true);

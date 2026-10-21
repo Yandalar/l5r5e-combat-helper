@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { actorRef, resolveActor, rollActor } from "./core/actor-refs";
 import { processAttack } from "./combat-handler";
 import { reverseCriticalEffect } from "./critical/critical-effects-application";
 import { revertFatigueDamage } from "./core/actor-utils";
@@ -162,7 +163,7 @@ function resolveTargetId(rollMessage, chain, l5rData) {
   if (attackData?.targetId) return attackData.targetId;
 
   // 2. Target embedded in the roll data by the L5R5e system
-  if (l5rData?.target?.actor?.id) return l5rData.target.actor.id;
+  if (l5rData?.target?.actor) return actorRef(l5rData.target.actor);
 
   // 3. Critical strike message in chain (incapacitated-target path)
   for (const msg of chain) {
@@ -178,7 +179,7 @@ function resolveTargetId(rollMessage, chain, l5rData) {
 
   // 5. Currently targeted token on the canvas (covers failed-attack case)
   const targets = Array.from(game.user?.targets ?? []);
-  if (targets.length > 0) return targets[0].actor?.id ?? null;
+  if (targets.length > 0) return actorRef(targets[0].actor);
 
   return null;
 }
@@ -195,7 +196,7 @@ async function revertChain(chain) {
     if (flags.attackData && !flags.attackData.resolved) {
       const { targetId, finalDamage } = flags.attackData;
       if (finalDamage > 0) {
-        const target = game.actors.get(targetId);
+        const target = resolveActor(targetId);
         if (target) await revertFatigueDamage(target, finalDamage);
       }
     }
@@ -208,14 +209,14 @@ async function revertChain(chain) {
         // Shattering Parry was triggered from this message.
         // The critical effects of THIS result were already reversed by SP.
         // Only revert the weapon damage SP caused.
-        const target = game.actors.get(spData.targetId);
+        const target = resolveActor(spData.targetId);
         const weapon = target?.items?.get(spData.weaponId);
         if (weapon) await revertWeaponDamage(weapon);
       } else {
         // Normal mitigation result: critical effects are currently applied.
         const { targetId, finalSeverity, ringUsed, wasWeaponSharp } =
           flags.mitigationResult;
-        const target = game.actors.get(targetId);
+        const target = resolveActor(targetId);
         if (target) {
           await reverseCriticalEffect(
             target,
@@ -274,10 +275,10 @@ async function reprocessRoll(rollMessage, l5rData, newTN, targetId) {
     return;
   }
 
-  const attacker = game.actors.get(rollMessage.speaker?.actor);
+  const attacker = rollActor(rollMessage, l5rData);
   if (!attacker) return;
 
-  const targetActor = targetId ? game.actors.get(targetId) : null;
+  const targetActor = targetId ? resolveActor(targetId) : null;
   if (!targetActor) {
     ui.notifications.warn(
       game.i18n.localize("l5r5e-combat-helper.notifications.targetNotFound"),
