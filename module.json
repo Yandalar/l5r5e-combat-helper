@@ -2,7 +2,7 @@
   "id": "l5r5e-combat-helper",
   "title": "L5R5e Combat Helper",
   "description": "Automates several situations in combat for Legend of the Five Rings 5th Edition. Calculates damage, applies armor resistance, handles Incapacitated condition, and detects Critical Strikes.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "compatibility": {
     "minimum": "11",
     "verified": "14",
@@ -19,6 +19,7 @@
   "esmodules": [
     "dist/bundle.js"
   ],
+  "socket": true,
   "styles": [
     "styles/module.css",
     "styles/critical-config.css"
@@ -47,15 +48,16 @@
     ]
   },
   "url": "https://github.com/Yandalar/l5r5e-combat-helper",
-  "manifest": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/module.json",
-  "download": "https://github.com/Yandalar/l5r5e-combat-helper/releases/download/v1.0.1/l5r5e-combat-helper-v1.0.1.zip",
-  "readme": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/README.md",
+  "manifest": "https://github.com/Yandalar/l5r5e-combat-helper/releases/latest/download/module.json",
+  "download": "https://github.com/Yandalar/l5r5e-combat-helper/releases/download/v1.1.0/l5r5e-combat-helper-v1.1.0.zip",
+  "readme": "https://github.com/Yandalar/l5r5e-combat-helper/releases/latest/download/README.md",
+  "changelog": "https://github.com/Yandalar/l5r5e-combat-helper/releases/latest/download/CHANGELOG.md",
   "bugs": "https://github.com/Yandalar/l5r5e-combat-helper/issues",
   "license": "LICENSE",
   "licenses": [
     {
       "name": "MIT",
-      "url": "https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/LICENSE"
+      "url": "https://github.com/Yandalar/l5r5e-combat-helper/releases/latest/download/LICENSE"
     }
   ]
 }

@@ -16,6 +16,8 @@ An automation module for Foundry VTT that streamlines combat for the Legend of t
 - **Void Reaction – Don't Defend** — Targets may spend 1 Void Point to willingly accept a Critical Strike instead of defending
 - **Shattering Parry** — After rolling Fitness, characters may reroll all mitigation dice at the cost of their weapon gaining the Damaged quality
 - **Attitude Effects** — Automatically applies the mechanical effects of Air, Fire, and Earth stances: Air increases incoming attack TN, Fire adds strife symbols as bonus damage, Earth blocks opportunity-based critical strikes
+- **Katas** — Detects kata rolls from the character sheet and applies their effects to the targets: conditions, damage, resistance rolls, timed buffs and debuffs that expire with the turn order (Soaring Slice, Lord Hida's Grip, Coiling Serpent Style, Striking as Earth/Fire/Water, Bear's Swipe Style)
+- **Player-friendly kata cards** — Players spend their own kata opportunities from the chat; the GM's client applies the effect
 - **GM Target Assignment** — Assign or reassign the target of any attack roll after the fact, reverting and reapplying damage automatically
 - **GM Difficulty Change** — Retroactively change the TN of any roll; all downstream effects are reverted and recalculated
 
@@ -28,14 +30,16 @@ An automation module for Foundry VTT that streamlines combat for the Legend of t
 1. Open Foundry VTT → **Add-on Modules** → **Install Module**
 2. Paste the manifest URL:
    ```
-   https://raw.githubusercontent.com/Yandalar/l5r5e-combat-helper/main/module.json
+   https://github.com/Yandalar/l5r5e-combat-helper/releases/latest/download/module.json
    ```
 3. Click **Install**
+
+After updating to a new version, restart the world (return to setup and launch it again) so Foundry picks up any manifest change.
 
 ### Manual
 
 1. Download the latest release ZIP from [Releases](https://github.com/Yandalar/l5r5e-combat-helper/releases)
-2. Extract and copy the `l5r5e-combat-helper` folder to your Foundry `Data/modules/` directory
+2. Extract it into a new `l5r5e-combat-helper` folder inside your Foundry `Data/modules/` directory (the ZIP contains `module.json` at its root)
 3. Restart Foundry VTT and enable the module in your L5R5e world
 
 **Data directory locations:**
@@ -47,7 +51,7 @@ An automation module for Foundry VTT that streamlines combat for the Legend of t
 
 - **Foundry VTT**: v11–v14
 - **Game System**: Legend of the Five Rings 5th Edition (`l5r5e`)
-- **Permissions**: GM required for automatic damage application
+- **Permissions**: a GM must be connected for the automation to run (damage, kata effects, players' opportunity spends)
 
 ## Support
 

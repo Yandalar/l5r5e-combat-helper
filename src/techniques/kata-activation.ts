@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { KATA_REGISTRY, PASSIVE_KATA_REGISTRY } from "./kata-registry";
+import { KATA_REGISTRY, PASSIVE_KATA_REGISTRY, kataMatchesItem } from "./kata-registry";
 import {
   executeKata,
   executeKataOpportunity,
@@ -19,18 +19,27 @@ import {
   createResistanceResultMessage,
   createPassiveKataOpportunityCard,
 } from "./technique-chat";
+import { onRenderChatMessage, isResponsibleClient, rollTargetActors } from "../core/compat-utils";
+import { actorRef, resolveActor, rollActor } from "../core/actor-refs";
+import { runAsGM, registerGmRelay, senderCanActFor } from "../core/gm-relay";
 
 /**
  * Registers all kata-related hooks:
  * - createChatMessage: detect kata activation rolls + resistance roll completions
- * - renderChatMessage: attach button handlers (resistance, opportunity)
+ * - renderChatMessageHTML: attach button handlers (resistance, opportunity)
  * - updateCombat: expire until_next_turn effects
  * - deleteCombat: clear all kata effects on combat end
  */
 export function registerKataActivationHandler() {
+  registerGmRelay({
+    kataOpportunity: applyKataOpportunity,
+    passiveKataOpportunity: applyPassiveKataOpportunityFromCard,
+  });
+
   // ── 1. Detect kata rolls and resistance roll completions ────────────────────
   Hooks.on("createChatMessage", async (message) => {
     if (!game.settings.get("l5r5e-combat-helper", "l5r5eCombatHelper")) return;
+    if (!isResponsibleClient(message)) return;
     try {
       if (!message.rolls || message.rolls.length === 0) return;
       const roll = message.rolls[0];
@@ -38,9 +47,7 @@ export function registerKataActivationHandler() {
       const l5rData = roll.l5r5e;
       if (l5rData.rnkEnded !== true) return;
 
-      const actor = message.speaker?.actor
-        ? game.actors.get(message.speaker.actor)
-        : null;
+      const actor = rollActor(message, l5rData);
       if (!actor) return;
 
       // Check for pending resistance roll FIRST (before kata detection)
@@ -57,19 +64,23 @@ export function registerKataActivationHandler() {
 
       if (isKataActivation) {
         // ── Active kata: rolled directly from the technique card ──────────────
-        const itemName = l5rData.item.name;
-        const compendiumSource = l5rData.item._stats?.compendiumSource;
-
-        const kata = KATA_REGISTRY.find(
-          (k) =>
-            k.names.includes(itemName) ||
-            (compendiumSource && k.compendiumIds?.includes(compendiumSource)),
-        );
+        const kata = KATA_REGISTRY.find((k) => kataMatchesItem(k, l5rData.item));
         if (!kata) return; // not yet registered — silent ignore
 
-        const targets = Array.from(game.user.targets)
-          .map((t) => t.actor)
-          .filter(Boolean);
+        const targets = rollTargetActors(message, l5rData);
+
+        const minSilhouette = kata.activation.minTargetSilhouette;
+        const tooSmall = minSilhouette ? targets.find((t) => getSilhouette(t) < minSilhouette) : null;
+        if (tooSmall) {
+          ui.notifications.warn(
+            game.i18n.format("l5r5e-combat-helper.notifications.targetTooSmall", {
+              kata: kata.names[0],
+              target: tooSmall.name,
+              silhouette: minSilhouette,
+            }),
+          );
+          return;
+        }
 
         let tn;
         if (kata.activation.difficulty === "target.silhouette") {
@@ -133,9 +144,6 @@ export function registerKataActivationHandler() {
         const opportunities = l5rData.summary?.opportunity || 0;
         if (opportunities === 0) return;
 
-        // Only the actor's owner (or GM) creates the opportunity card — prevents duplicates across clients
-        if (!actor.isOwner) return;
-
         for (const kata of PASSIVE_KATA_REGISTRY) {
           if (!kata.activation) continue;
           if (!kata.activation.skills.includes(l5rData.skillId)) continue;
@@ -143,17 +151,9 @@ export function registerKataActivationHandler() {
             ? kata.activation.ring.includes(rollRing)
             : kata.activation.ring === rollRing;
           if (!ringMatch) continue;
-          const hasKata = actor.items.some(
-            (item) =>
-              kata.names.includes(item.name) ||
-              (kata.compendiumIds?.some(
-                (id) => item._stats?.compendiumSource === id,
-              )),
-          );
+          const hasKata = actor.items.some((item) => kataMatchesItem(kata, item));
           if (!hasKata) continue;
-          const currentTargetIds = Array.from(game.user.targets)
-            .map((t) => t.actor?.id)
-            .filter(Boolean);
+          const currentTargetIds = rollTargetActors(message, l5rData).map((a) => actorRef(a));
           await createPassiveKataOpportunityCard(kata, actor, opportunities, currentTargetIds, message.id);
         }
       }
@@ -163,8 +163,7 @@ export function registerKataActivationHandler() {
   });
 
   // ── 2. Attach button handlers on chat message render ───────────────────────
-  Hooks.on("renderChatMessage", (message, html) => {
-    const el = html instanceof HTMLElement ? html : html[0];
+  onRenderChatMessage((message, el) => {
 
     // Resistance roll button
     el.querySelectorAll(".kata-resistance-roll-button").forEach((btn) => {
@@ -192,8 +191,10 @@ export function registerKataActivationHandler() {
   });
 
   // ── 3. Duration cleanup on turn change ─────────────────────────────────────
-  Hooks.on("updateCombat", async (combat, changed) => {
+  Hooks.on("updateCombat", async (combat, changed, _options, userId) => {
     if (!("turn" in changed) && !("round" in changed)) return;
+    // Every client gets this hook; only one may revert effects (see isResponsibleClient)
+    if (!isResponsibleClient({ author: userId })) return;
     // "until_start_of_next_turn" effects: expire when combatant starts their turn
     const combatant = combat.combatants.get(combat.current?.combatantId);
     if (combatant?.actorId) {
@@ -207,7 +208,8 @@ export function registerKataActivationHandler() {
   });
 
   // ── 4. Full cleanup on combat end ──────────────────────────────────────────
-  Hooks.on("deleteCombat", async () => {
+  Hooks.on("deleteCombat", async (_combat, _options, userId) => {
+    if (!isResponsibleClient({ author: userId })) return;
     await clearAllKataEffects();
   });
 }
@@ -221,9 +223,7 @@ async function handleResistanceRollResult(actor, l5rData, pending) {
   const success = totalSuccess >= pending.difficulty;
 
   if (!success && pending.onFailure?.length) {
-    const attacker = pending.attackerId
-      ? game.actors.get(pending.attackerId)
-      : null;
+    const attacker = resolveActor(pending.attackerId);
     const ctx = {
       attacker,
       targets: [actor],
@@ -266,7 +266,7 @@ async function handleResistanceRollButtonClick(button) {
   const skillCatId = button.dataset.skillCat;
   const difficulty = parseInt(button.dataset.difficulty);
 
-  const target = game.actors.get(targetId);
+  const target = resolveActor(targetId);
   if (!target) {
     ui.notifications.error(
       game.i18n.localize("l5r5e-combat-helper.notifications.targetNotFound"),
@@ -310,7 +310,7 @@ async function handlePassiveKataButtonClick(message, button) {
     return;
   }
 
-  const attacker = game.actors.get(passiveData.attackerId);
+  const attacker = resolveActor(passiveData.attackerId);
   if (!attacker) return;
 
   if (!attacker.isOwner && !game.user.isGM) {
@@ -322,21 +322,42 @@ async function handlePassiveKataButtonClick(message, button) {
 
   // Disable all buttons on this card to prevent double-spend
   const card = button.closest(".kata-passive-opportunity");
-  if (card) card.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  const buttons = card ? [...card.querySelectorAll("button")] : [button];
+  buttons.forEach((b) => (b.disabled = true));
+
+  const sent = await runAsGM("passiveKataOpportunity", {
+    messageId: message.id,
+    kataName: button.dataset.kataName,
+    amount: parseInt(button.dataset.amount),
+    condition: button.dataset.condition ?? null,
+  });
+  if (!sent) buttons.forEach((b) => (b.disabled = false));
+}
+
+/**
+ * GM side of a passive kata opportunity button (relayed from the player's
+ * client when needed): marks the card used, applies the effect, deducts the
+ * spent opportunities from the linked damage message and posts the result.
+ */
+export async function applyPassiveKataOpportunityFromCard({ messageId, kataName, amount, condition }, senderId) {
+  const message = game.messages.get(messageId);
+  const passiveData = message?.getFlag("l5r5e-combat-helper", "passiveKataData");
+  if (!passiveData || passiveData.used) return;
+
+  const attacker = resolveActor(passiveData.attackerId);
+  if (!attacker || !senderCanActFor(senderId, attacker)) return;
+
+  const kata = PASSIVE_KATA_REGISTRY.find((k) => k.names.includes(kataName));
+  if (!kata) return;
 
   await message.setFlag("l5r5e-combat-helper", "passiveKataData", {
     ...passiveData,
     used: true,
   });
 
-  const kataName = button.dataset.kataName;
-  const amount = parseInt(button.dataset.amount);
-  const chosenCondition = button.dataset.condition ?? null;
-  const kata = PASSIVE_KATA_REGISTRY.find((k) => k.names.includes(kataName));
-  if (!kata) return;
-
+  const chosenCondition = condition ?? null;
   const targetActors = (passiveData.targetIds || [])
-    .map((id) => game.actors.get(id))
+    .map((ref) => resolveActor(ref))
     .filter(Boolean);
 
   await applyPassiveKataOpportunity(kata, attacker, amount, targetActors, chosenCondition);
@@ -396,7 +417,7 @@ async function handleOpportunityButtonClick(message, button) {
     return;
   }
 
-  const attacker = game.actors.get(oppData.attackerId);
+  const attacker = resolveActor(oppData.attackerId);
   if (!game.user.isGM && !attacker?.isOwner) {
     ui.notifications.warn(
       game.i18n.localize("l5r5e-combat-helper.notifications.noPermission"),
@@ -405,6 +426,18 @@ async function handleOpportunityButtonClick(message, button) {
   }
 
   button.disabled = true;
+  const sent = await runAsGM("kataOpportunity", { messageId: message.id });
+  if (!sent) button.disabled = false;
+}
+
+/** GM side of the active kata "Spend" button (relayed from the player's client when needed). */
+export async function applyKataOpportunity({ messageId }, senderId) {
+  const message = game.messages.get(messageId);
+  const oppData = message?.getFlag("l5r5e-combat-helper", "kataOpportunityData");
+  if (!oppData || oppData.used) return;
+
+  const attacker = resolveActor(oppData.attackerId);
+  if (!attacker || !senderCanActFor(senderId, attacker)) return;
 
   await message.setFlag("l5r5e-combat-helper", "kataOpportunityData", {
     ...oppData,
@@ -412,7 +445,7 @@ async function handleOpportunityButtonClick(message, button) {
   });
 
   const targets = (oppData.targetIds || [])
-    .map((id) => game.actors.get(id))
+    .map((ref) => resolveActor(ref))
     .filter(Boolean);
   // kata and opportunitiesSpent are not known here (kataOpportunityData
   // doesn't persist either) — executeKataOpportunity fills both in once it

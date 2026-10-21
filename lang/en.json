@@ -243,5 +243,7 @@
   "l5r5e-combat-helper.kata.effect.tnReduction": "TN -{amount} (next attack)",
   "l5r5e-combat-helper.kata.effect.criticalSeverityBoost": "Critical Severity +{amount} (next critical)",
   "l5r5e-combat-helper.kata.effect.conditionLock": "{condition} (locked)",
-  "l5r5e-combat-helper.notifications.conditionNotPresent": "{target} does not have the {condition} condition — cannot lock it."
+  "l5r5e-combat-helper.notifications.conditionNotPresent": "{target} does not have the {condition} condition — cannot lock it.",
+  "l5r5e-combat-helper.notifications.targetTooSmall": "{kata} requires a target of silhouette {silhouette} or more: {target} is too small. The kata was not applied.",
+  "l5r5e-combat-helper.notifications.noActiveGM": "A GM must be connected to apply this effect."
 }

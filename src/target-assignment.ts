@@ -17,7 +17,7 @@
  * 5. On confirm: prior fatigue is reverted, new damage is processed.
  */
 
-import { resolveMessageId, confirmDialog } from "./core/compat-utils";
+import { resolveMessageId, confirmDialog, contextMenuEntry } from "./core/compat-utils";
 import { revertFatigueDamage } from "./core/actor-utils";
 import {
   checkAttackSuccess,
@@ -57,7 +57,7 @@ function addAssignTargetOption(html, options) {
 
   if (!optionsArray) return;
 
-  optionsArray.push({
+  optionsArray.push(contextMenuEntry({
     name: game.i18n.localize("l5r5e-combat-helper.contextMenu.assignTarget"),
     icon: '<i class="fas fa-crosshairs"></i>',
 
@@ -222,5 +222,5 @@ function addAssignTargetOption(html, options) {
         );
       }
     },
-  });
+  }));
 }

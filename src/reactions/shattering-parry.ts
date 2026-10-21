@@ -20,7 +20,7 @@
  */
 
 import { reverseCriticalEffect } from "../critical/critical-effects-application";
-import { confirmDialog, resolveMessageId } from "../core/compat-utils";
+import { confirmDialog, resolveMessageId, contextMenuEntry } from "../core/compat-utils";
 import { getEquippedWeapon } from "../core/weapon-utils";
 
 /**
@@ -55,7 +55,7 @@ function addShatteringParryOption(html, options) {
 
   if (!optionsArray) return;
 
-  optionsArray.push({
+  optionsArray.push(contextMenuEntry({
     name: game.i18n.localize("l5r5e-combat-helper.contextMenu.shatteringParry"),
     icon: '<i class="fas fa-shield-alt"></i>',
 
@@ -131,7 +131,7 @@ function addShatteringParryOption(html, options) {
 
       await handleShatteringParry(target, weapon, parryData, message);
     },
-  });
+  }));
 }
 
 /**

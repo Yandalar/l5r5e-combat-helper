@@ -18,6 +18,7 @@
 
 import { applyCriticalEffect } from "./critical-effects-application";
 import { isWeaponSharp } from "./critical-effects-table";
+import { isResponsibleClient } from "../core/compat-utils";
 
 /**
  * Registers the hook that listens for completed mitigation rolls.
@@ -31,6 +32,7 @@ import { isWeaponSharp } from "./critical-effects-table";
  */
 export function registerCriticalMitigationHandler() {
   Hooks.on("createChatMessage", async (message) => {
+    if (!isResponsibleClient(message)) return;
     try {
       // Ensure the message contains roll data
       if (!message.rolls || message.rolls.length === 0) return;

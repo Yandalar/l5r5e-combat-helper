@@ -377,18 +377,17 @@ describe("Lord Hida's Grip — target.silhouette difficulty", () => {
     onCreate = getHookCallback("createChatMessage");
   });
 
-  it("uses silhouette 2 (getSilhouette default) when target has no override and width < 2", async () => {
+  it("refuses a target below minTargetSilhouette (default silhouette 2) and applies nothing", async () => {
     const foe = createMockActor({
       id: "foe-sil",
       name: "Small Enemy",
       system: { fatigue: { value: 0 } },
     });
     // Default prototypeToken.width = 1 (from createMockActor), which triggers
-    // getSilhouette's fallback to 2 (Medium)
+    // getSilhouette's fallback to 2 (Medium) — below the kata's minimum of 3
     g().game.actors.push(foe);
     target(foe);
 
-    // With TN 2 (silhouette default), 2 successes → success
     await onCreate(
       kataMessage(attacker, {
         skillId: "fitness",
@@ -397,8 +396,11 @@ describe("Lord Hida's Grip — target.silhouette difficulty", () => {
       }),
     );
 
-    const card = g().game.messages.at(-1);
-    expect(card.content).toMatch(/TN:\s*2\b/);
+    expect(g().game.messages).toHaveLength(0);
+    expect(foe.statuses.has("immobilized")).toBe(false);
+    expect(g().ui.notifications.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Small Enemy"),
+    );
   });
 
   it("respects silhouette flag override (silhouette 4)", async () => {

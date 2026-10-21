@@ -54,8 +54,38 @@ describe("registerKataActivationHandler", () => {
     registerKataActivationHandler();
     const events = getRegisteredHookEvents();
     expect(events).toEqual(
-      expect.arrayContaining(["createChatMessage", "renderChatMessage", "updateCombat", "deleteCombat"]),
+      expect.arrayContaining(["createChatMessage", "renderChatMessageHTML", "updateCombat", "deleteCombat"]),
     );
+  });
+});
+
+describe("kata activation across clients", () => {
+  let attacker: any;
+  let foe: any;
+
+  beforeEach(() => {
+    attacker = createMockActor({ id: "att", name: "Bushi", items: [createMockWeapon({ system: { damage: 3 } })] });
+    foe = createMockActor({ id: "foe", name: "Bandit", system: { fatigue: { value: 0 } } });
+    g().game.actors.push(attacker, foe);
+    registerKataActivationHandler();
+  });
+
+  it("a player's client ignores the roll while a GM is connected", async () => {
+    g().game.user = { id: "p1", name: "Player One", isGM: false, active: true, targets: new Set([{ actor: foe }]) };
+    const msg = kataMessage(attacker, { totalSuccess: 4 });
+    msg.author = { id: "p1" };
+    await getHookCallback("createChatMessage")(msg);
+    expect(foe.system.fatigue.value).toBe(0);
+    expect(g().game.messages).toHaveLength(0);
+  });
+
+  it("the GM processes a player's roll once, against the target stored in the roll", async () => {
+    const msg = kataMessage(attacker, { totalSuccess: 4 });
+    msg.author = { id: "p1" };
+    msg.rolls[0].l5r5e.target = { actor: foe };
+    await getHookCallback("createChatMessage")(msg);
+    expect(foe.system.fatigue.value).toBe(5);
+    expect(g().game.messages).toHaveLength(1);
   });
 });
 

@@ -1,4 +1,15 @@
 // @ts-nocheck
+import { kataEffectActors } from "../core/actor-refs";
+
+/**
+ * Whether placeable `t` shows `actor`: an unlinked token's synthetic actor
+ * only matches its own token; a world actor only matches its linked tokens
+ * (unlinked tokens share its id but are different documents).
+ */
+function isTokenOf(t, actor) {
+  if (actor.isToken) return t.actor === actor;
+  return t.actor?.id === actor.id && t.document?.actorLink !== false;
+}
 
 const RING_LIGHT_COLORS = {
   earth: "#4d7a2a",
@@ -26,7 +37,7 @@ export async function applyKataTokenAura(actor, ring, techniqueType = "kata") {
 
   const color = RING_LIGHT_COLORS[ring] ?? "#888888";
   const animation = TECHNIQUE_ANIMATIONS[techniqueType] ?? TECHNIQUE_ANIMATIONS.kata;
-  const tokens = canvas.tokens.placeables.filter((t) => t.actor?.id === actor.id);
+  const tokens = canvas.tokens.placeables.filter((t) => isTokenOf(t, actor));
   if (tokens.length === 0) return;
 
   const existing = actor.getFlag("l5r5e-combat-helper", AURA_FLAG);
@@ -78,7 +89,7 @@ export async function removeKataTokenAura(actor) {
     return;
   }
 
-  const tokens = canvas.tokens.placeables.filter((t) => t.actor?.id === actor.id);
+  const tokens = canvas.tokens.placeables.filter((t) => isTokenOf(t, actor));
   const original = auraData.originalLight ?? {
     dim: 0,
     bright: 0,
@@ -276,10 +287,10 @@ export async function removeConditionLockActiveEffects(target) {
  */
 export async function clearAllKataTokenAuras() {
   if (!canvas?.tokens) return;
-  for (const actor of game.actors) {
+  for (const actor of kataEffectActors()) {
     const auraData = actor.getFlag("l5r5e-combat-helper", AURA_FLAG);
     if (auraData) {
-      const tokens = canvas.tokens.placeables.filter((t) => t.actor?.id === actor.id);
+      const tokens = canvas.tokens.placeables.filter((t) => isTokenOf(t, actor));
       const original = auraData.originalLight ?? {
         dim: 0,
         bright: 0,

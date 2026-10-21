@@ -22,7 +22,7 @@ import {
   isIncapacitated,
 } from "../core/actor-utils";
 import { createVoidCriticalStrikeMessage } from "../ui/chat-messages";
-import { confirmDialog } from "../core/compat-utils";
+import { confirmDialog, contextMenuEntry } from "../core/compat-utils";
 import { getEquippedWeapon } from "../core/weapon-utils";
 
 /**
@@ -77,7 +77,7 @@ function addVoidOption(html, options) {
     return;
   }
 
-  optionsArray.push({
+  optionsArray.push(contextMenuEntry({
     name: game.i18n.localize("l5r5e-combat-helper.contextMenu.spendVoid"),
     icon: '<i class="fas fa-yin-yang"></i>',
 
@@ -174,7 +174,7 @@ function addVoidOption(html, options) {
         voidBefore,
       );
     },
-  });
+  }));
 }
 
 /**

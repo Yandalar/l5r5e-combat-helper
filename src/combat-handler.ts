@@ -36,6 +36,7 @@ import {
   getFireStrifeBonus,
 } from "./stances/stance-effects";
 import { removeTnReductionActiveEffect } from "./techniques/token-effects";
+import { isResponsibleClient } from "./core/compat-utils";
 
 /**
  * Registers the main combat handler hook.
@@ -61,6 +62,7 @@ import { removeTnReductionActiveEffect } from "./techniques/token-effects";
 export function registerCombatHandler() {
   Hooks.on("createChatMessage", async (message) => {
     if (!game.settings.get("l5r5e-combat-helper", "l5r5eCombatHelper")) return;
+    if (!isResponsibleClient(message)) return;
 
     try {
       if (!message.rolls || message.rolls.length === 0) return;

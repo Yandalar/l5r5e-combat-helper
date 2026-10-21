@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-10-21
+
+### Added
+
+- **Attitude (stance) effects**: Air raises the TN of attacks against the character, Fire adds the roll's strife symbols as bonus damage, and Earth protects against opportunity-based critical strikes.
+- **Kata automation**: rolling a kata from the character sheet is detected and its mechanical effects are applied to the targeted tokens.
+  - Activation, failure, resistance-roll and result chat cards.
+  - Effects: conditions, damage (with or without armor), assistance, resistance rolls for the target, physical resistance modifiers, critical severity boosts, condition locks and attack TN reductions, scaled by bonus successes or opportunities spent.
+  - Timed effects (until the start or the end of the user's next turn, or the whole scene) are cleaned up automatically as turns advance and when combat ends; affected tokens show a light aura while they last.
+  - Supported katas: Soaring Slice, Lord Hida's Grip, Coiling Serpent Style (Immobilized half; the weapon lock is shown as a note), Striking as Earth, Striking as Fire, Striking as Water and Bear's Swipe Style. Other techniques are ignored and resolved by hand.
+  - Katas are recognized by their English or Spanish name, regardless of a clan tag such as "(Crab)", typographic apostrophes, accents or case.
+- **Players can spend kata opportunities** from the chat cards; the effect is applied by the connected GM through the module socket.
+
+### Changed
+
+- Foundry v14 compatibility: chat card buttons use the `renderChatMessageHTML` hook and chat context-menu entries use `label`/`visible`, removing the deprecation warnings.
+- Lord Hida's Grip refuses targets below silhouette 3.
+- Striking as Water now lasts until the end of the attacker's next turn and never lowers physical resistance below 0.
+- **The world must be restarted once after updating** so Foundry enables the new module socket.
+
+### Fixed
+
+- With several users connected, every client processed each roll, duplicating chat cards and effects. Rolls, effect expiry and combat-end cleanup now run only on the active GM's client (or on the roller's when no GM is connected).
+- Effects applied after a kata card (opportunity spends, resistance rolls) landed on the sidebar actor instead of the targeted unlinked token; cards now store each actor's UUID.
+- Timed kata effects on unlinked tokens never expired.
+- Attacking with several targets selected produces an independent damage message for each one.
+
+### Internal
+
+- Vitest suite with mocked Foundry globals (`npm test`).
+- New helpers: `compat-utils` (`onRenderChatMessage`, `isResponsibleClient`, `rollTargetActors`, `contextMenuEntry`), `actor-refs` and `gm-relay`.
+- Releases are built and published by GitHub Actions when a `vX.Y.Z` tag is pushed; the manifest URL now points to the latest release.
+
+---
+
 ## [1.0.1] - 2026-06-05
 
 ### Added

@@ -38,6 +38,7 @@ import {
   applyConditionLockActiveEffect,
   removeConditionLockActiveEffects,
 } from "./token-effects";
+import { actorRef, kataEffectActors } from "../core/actor-refs";
 
 /**
  * @typedef {{
@@ -268,7 +269,7 @@ async function scheduleResistanceRolls(effect, ctx, targets) {
       skillCatId,
       difficulty,
       onFailure: effect.onFailure,
-      attackerId: ctx.attacker.id,
+      attackerId: actorRef(ctx.attacker),
     });
     await createResistanceRollRequestMessage(
       target,
@@ -316,11 +317,12 @@ async function applyResistanceBuffEffect(effect, ctx, targets) {
   for (const target of targets) {
     const current = target.getFlag(MODULE_ID, "resistanceBuff") || 0;
     await target.setFlag(MODULE_ID, "resistanceBuff", current + amount);
-    if (effect.duration === "until_next_turn") {
+    const expiryField = DURATION_EXPIRY[effect.duration];
+    if (expiryField) {
       await storeActiveKataEffect(target, {
         type: "resistance_buff",
         amount,
-        expiresAfterCombatant: ctx.attacker.id,
+        [expiryField]: ctx.attacker.id,
         ring: ctx.kata?.activation?.ring,
       });
     }
@@ -440,11 +442,28 @@ async function removeEffectStatus(actor, effect) {
 }
 
 /**
+ * Undoes one timed resistance_buff, from either expiry path. Sign-symmetric:
+ * a negative buff (Striking as Water) must return to 0 from below.
+ */
+async function revertResistanceBuff(actor, effect) {
+  if (!effect.amount) return;
+  const current = actor.getFlag(MODULE_ID, "resistanceBuff") || 0;
+  const newAmount = current - effect.amount;
+  if (newAmount === 0) {
+    await actor.unsetFlag(MODULE_ID, "resistanceBuff");
+  } else {
+    await actor.setFlag(MODULE_ID, "resistanceBuff", newAmount);
+  }
+  await removeKataTokenAura(actor);
+  await removeResistanceActiveEffects(actor);
+}
+
+/**
  * Removes all activeKataEffects that expire when combatantActorId takes their turn.
  */
 export async function processExpiredKataEffects(combatantActorId) {
   const expiryField = DURATION_EXPIRY.until_next_turn;
-  for (const actor of game.actors) {
+  for (const actor of kataEffectActors()) {
     const effects = actor.getFlag(MODULE_ID, "activeKataEffects") || [];
     const expiring = effects.filter((e) => e[expiryField] === combatantActorId);
     if (expiring.length === 0) continue;
@@ -454,17 +473,7 @@ export async function processExpiredKataEffects(combatantActorId) {
       // BUG #9 FIX: guard and arithmetic are sign-symmetric now — a negative
       // resistance_buff (e.g. Striking as Water) must be able to expire back
       // up to 0 from below, not just a positive buff decaying down to 0.
-      if (effect.type === "resistance_buff" && effect.amount !== 0) {
-        const current = actor.getFlag(MODULE_ID, "resistanceBuff") || 0;
-        const newAmount = current - effect.amount; // no clamp — a negative buff must be able to return to 0 from below
-        if (newAmount === 0) {
-          await actor.unsetFlag(MODULE_ID, "resistanceBuff");
-        } else {
-          await actor.setFlag(MODULE_ID, "resistanceBuff", newAmount);
-        }
-        await removeKataTokenAura(actor);
-        await removeResistanceActiveEffects(actor);
-      }
+      if (effect.type === "resistance_buff") await revertResistanceBuff(actor, effect);
       if (effect.type === "attack_tn_reduction") {
         await actor.unsetFlag(MODULE_ID, "pendingTnReduction");
         await removeTnReductionActiveEffect(actor);
@@ -482,7 +491,7 @@ export async function processExpiredKataEffects(combatantActorId) {
  */
 export async function processEndOfTurnKataEffects(combatantActorId) {
   const expiryField = DURATION_EXPIRY.until_end_of_next_turn;
-  for (const actor of game.actors) {
+  for (const actor of kataEffectActors()) {
     const effects = actor.getFlag(MODULE_ID, "activeKataEffects") || [];
     const expiring = effects.filter((e) => e[expiryField] === combatantActorId);
     if (expiring.length === 0) continue;
@@ -490,6 +499,7 @@ export async function processEndOfTurnKataEffects(combatantActorId) {
     for (const effect of expiring) {
       // BUG #10 FIX: honor statusId here too, same as processExpiredKataEffects.
       await removeEffectStatus(actor, effect);
+      if (effect.type === "resistance_buff") await revertResistanceBuff(actor, effect);
       if (effect.type === "critical_severity_boost") {
         await actor.unsetFlag(MODULE_ID, "pendingCriticalSeverityBoost");
         await removeCriticalSeverityBoostActiveEffect(actor);
@@ -508,7 +518,7 @@ export async function processEndOfTurnKataEffects(combatantActorId) {
  * Removes ALL activeKataEffects from all actors (called on combat end).
  */
 export async function clearAllKataEffects() {
-  for (const actor of game.actors) {
+  for (const actor of kataEffectActors()) {
     const effects = actor.getFlag(MODULE_ID, "activeKataEffects") || [];
 
     // BUG #11 FIX: these three cleanups must run for every actor regardless

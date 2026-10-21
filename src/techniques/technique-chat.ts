@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import { logWarn } from "../core/logger";
+import { actorRef } from "../core/actor-refs";
 
 /**
  * Per-effect-type chat summary renderers, keyed identically to
@@ -128,8 +129,8 @@ export async function createKataSuccessMessage(
       "l5r5e-combat-helper": {
         kataOpportunityData: {
           kataName: kata.names[0],
-          attackerId: attacker.id,
-          targetIds: targets.map((t) => t.id),
+          attackerId: actorRef(attacker),
+          targetIds: targets.map((t) => actorRef(t)),
           extraSuccesses,
           used: false,
         },
@@ -193,8 +194,8 @@ export async function createResistanceRollRequestMessage(
         effect: failureDesc,
       })}</em></p>
       <button class="kata-resistance-roll-button"
-        data-target-id="${target.id}"
-        data-attacker-id="${attacker.id}"
+        data-target-id="${actorRef(target)}"
+        data-attacker-id="${actorRef(attacker)}"
         data-skill="${skill}"
         data-skill-cat="${skillCatId}"
         data-difficulty="${difficulty}">
@@ -236,7 +237,7 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
       const conditionName = game.i18n.localize(`l5r5e-combat-helper.conditions.${cond}`);
       return `<button class="kata-passive-opportunity-btn"
         data-kata-name="${kata.names[0]}"
-        data-attacker-id="${attacker.id}"
+        data-attacker-id="${actorRef(attacker)}"
         data-amount="1"
         data-condition="${cond}">
         ${game.i18n.format("l5r5e-combat-helper.kata.chat.passiveLockCondition", { condition: conditionName })}
@@ -250,7 +251,7 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
       const n = costMin + i;
       return `<button class="kata-passive-opportunity-btn"
         data-kata-name="${kata.names[0]}"
-        data-attacker-id="${attacker.id}"
+        data-attacker-id="${actorRef(attacker)}"
         data-amount="${n}">
         ${game.i18n.format(spendKey, { amount: n })}
       </button>`;
@@ -283,7 +284,7 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
       "l5r5e-combat-helper": {
         passiveKataData: {
           kataName: kata.names[0],
-          attackerId: attacker.id,
+          attackerId: actorRef(attacker),
           targetIds,
           rollMessageId,
           used: false,
