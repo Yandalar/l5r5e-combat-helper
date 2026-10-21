@@ -28,6 +28,9 @@ import { onRenderChatMessage, isResponsibleClient, rollTargetActors } from "../c
 import { actorRef, resolveActor, rollActor } from "../core/actor-refs";
 import { runAsGM, registerGmRelay, senderCanActFor } from "../core/gm-relay";
 import { registerManualKataHandler } from "./manual-katas";
+import { registerTechniqueChoice } from "./technique-choice";
+import { KIHO_REGISTRY } from "./kiho-registry";
+import { executeKiho, registerKihoHandlers } from "./kiho-engine";
 
 /**
  * Registers all kata-related hooks:
@@ -42,6 +45,8 @@ export function registerKataActivationHandler() {
     passiveKataOpportunity: applyPassiveKataOpportunityFromCard,
   });
   registerManualKataHandler();
+  registerTechniqueChoice();
+  registerKihoHandlers();
 
   // ── 1. Detect kata rolls and resistance roll completions ────────────────────
   Hooks.on("createChatMessage", async (message) => {
@@ -64,6 +69,26 @@ export function registerKataActivationHandler() {
       );
       if (pending && matchesPendingResistance(l5rData, pending, actor.type)) {
         await handleResistanceRollResult(actor, l5rData, pending);
+        return;
+      }
+
+      if (l5rData.item?.system?.technique_type === "kiho") {
+        const kiho = KIHO_REGISTRY.find((k) => kataMatchesItem(k, l5rData.item));
+        if (!kiho) return; // not registered — silent ignore
+        await executeKiho(kiho, {
+          attacker: actor,
+          targets: rollTargetActors(message, l5rData),
+          extraSuccesses: 0,
+          opportunitiesSpent: 0,
+          tn: kiho.activation.difficulty,
+          totalSuccess: l5rData.summary?.totalSuccess || 0,
+          weapon: resolveAttackWeapon(l5rData, actor),
+          resistance: null,
+          kata: kiho,
+          chosenCondition: null,
+          sourceMessageId: message.id,
+          l5rData,
+        });
         return;
       }
 

@@ -26,8 +26,37 @@ export function getSecondaryWeapon(actor, exclude = null) {
   return weapons.find((w) => w.id !== exclude?.id && w !== exclude) ?? null;
 }
 
-/** The weapon a roll's own item represents, if it's a weapon; otherwise the attacker's equipped weapon. */
+/**
+ * The unarmed punch profile (Core Rulebook p. 237: range 0, damage 1,
+ * deadliness 2, Snaring), used for unarmed attacks without an unarmed weapon
+ * item. A kick (range 1, damage 2, deadliness 1) is modelled as a weapon item.
+ */
+export const PUNCH_PROFILE = Object.freeze({
+  id: null,
+  name: "Punch",
+  type: "weapon",
+  system: Object.freeze({
+    skill: "unarmed",
+    damage: 1,
+    deadliness: 2,
+    range: "0",
+    properties: Object.freeze([Object.freeze({ name: "Snaring" })]),
+  }),
+});
+
+const isUnarmedWeapon = (item) => item?.type === "weapon" && item.system?.skill === "unarmed";
+
+/**
+ * The weapon an attack roll uses. Unarmed rolls use the roll's unarmed
+ * weapon, else the first equipped unarmed weapon, else the punch profile —
+ * never the equipped katana. Other rolls: the roll's own weapon item, else
+ * the attacker's equipped weapon.
+ */
 export function resolveAttackWeapon(l5rData, attacker) {
+  if (l5rData?.skillId === "unarmed") {
+    if (isUnarmedWeapon(l5rData.item)) return l5rData.item;
+    return getEquippedWeapons(attacker).find(isUnarmedWeapon) ?? PUNCH_PROFILE;
+  }
   if (l5rData?.item?.type === "weapon") return l5rData.item;
   return getEquippedWeapon(attacker);
 }

@@ -136,7 +136,7 @@ export async function createDamageMessage(
       <p>${dealsTo}</p>
       ${fireBonusLine}
       ${tnReductionLine}
-      ${attackData?.hasAssistance ? `<p>💡 ${game.i18n.localize("l5r5e-combat-helper.kata.chat.assistanceActive")}</p>` : ""}
+      ${attackData?.hasAssistance ? `<p>${game.i18n.localize("l5r5e-combat-helper.kata.chat.assistanceActive")}</p>` : ""}
       ${armorInfo}
       <p>${fatigueText}</p>
       ${incapacitatedMessage}

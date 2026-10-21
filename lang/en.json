@@ -278,5 +278,17 @@
   "l5r5e-combat-helper.notifications.pickExtraTargets": "Target the extra characters first.",
   "l5r5e-combat-helper.chat.criticalStrike.kataReason": "<strong>{attacker}</strong> executes {kata}!",
   "l5r5e-combat-helper.chat.criticalStrike.kataSeverity": "<strong>Severity:</strong> {severity}",
-  "l5r5e-combat-helper.chat.criticalStrike.mitigationTn": "<strong>Fitness TN to resist:</strong> {tn}"
+  "l5r5e-combat-helper.chat.criticalStrike.mitigationTn": "<strong>Fitness TN to resist:</strong> {tn}",
+  "l5r5e-combat-helper.kiho.chat.activated": "<strong>{name}</strong> activates the kihō.",
+  "l5r5e-combat-helper.kiho.chat.failed": "<strong>{name}</strong> fails to activate the kihō.",
+  "l5r5e-combat-helper.kiho.chat.alreadyActive": "{name} already has this kihō active and can't reactivate it.",
+  "l5r5e-combat-helper.kiho.chat.enhancement": "Enhancement effect (active until ended, another kihō or the end of the scene):",
+  "l5r5e-combat-helper.kiho.chat.burst": "Burst effect:",
+  "l5r5e-combat-helper.kiho.chat.end": "☯ End kihō",
+  "l5r5e-combat-helper.kiho.chat.ended": "{name} ends {kiho}.",
+  "l5r5e-combat-helper.kata.chat.voidGained": "✨ {target} gains {amount} Void point(s)",
+  "l5r5e-combat-helper.kata.chat.choicePending": "⚖️ Pending choice: {targets}",
+  "l5r5e-combat-helper.kata.chat.choicePrompt": "<strong>{chooser}</strong> chooses (target: {target}):",
+  "l5r5e-combat-helper.kata.chat.choiceMade": "{chooser} chose: {option}",
+  "l5r5e-combat-helper.kata.chat.techniqueEffectsCleared": "🌊 Technique effects ended on {targets}"
 }

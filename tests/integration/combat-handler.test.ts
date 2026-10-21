@@ -76,6 +76,13 @@ describe("processAttack — damage pipeline", () => {
     expect(target.system.fatigue.value).toBe(7);
   });
 
+  it("an unarmed attack deals punch damage, not the equipped weapon's", async () => {
+    const punch = attackMessage(attacker, { skillId: "unarmed" });
+    await processAttack(punch, attacker, target, punch.rolls[0].l5r5e);
+    // punch 1 + (3 successes - TN 2) = 2
+    expect(target.system.fatigue.value).toBe(2);
+  });
+
   it("subtracts armor resistance", async () => {
     target.items.push(
       createMockItem({ type: "armor", system: { equipped: true, armor: { physical: 3 } } }),

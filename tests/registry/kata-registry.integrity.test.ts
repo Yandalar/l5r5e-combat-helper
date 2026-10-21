@@ -5,6 +5,7 @@ import {
   MANUAL_KATA_REGISTRY,
   SKILL_CATEGORY_MAP,
 } from "../../src/techniques/kata-registry";
+import { KIHO_REGISTRY } from "../../src/techniques/kiho-registry";
 import {
   EFFECT_TYPES,
   EFFECT_BUCKETS,
@@ -48,6 +49,9 @@ function walkEffectList(kataName: string, effects: AnyEffect[], bucket: string, 
     if (effect.type === "resistance_roll" && Array.isArray(effect.onFailure)) {
       walkEffectList(kataName, effect.onFailure, "onFailure", out);
     }
+    if (effect.type === "choice" && Array.isArray(effect.options)) {
+      for (const option of effect.options) walkEffectList(kataName, option.effects ?? [], "choice", out);
+    }
   }
 }
 
@@ -67,6 +71,9 @@ function collectEffects(kata: AnyKata): WalkedEffect[] {
   if (Array.isArray(kata.onUse)) {
     walkEffectList(kataName, kata.onUse, "onUse", out);
   }
+  for (const tier of kata.burst ?? []) {
+    walkEffectList(kataName, tier.effects ?? [], "burst", out);
+  }
   if (Array.isArray(kata.onExtraSuccesses?.effects)) {
     walkEffectList(kataName, kata.onExtraSuccesses.effects, "onExtraSuccesses", out);
   }
@@ -83,7 +90,8 @@ function collectEffects(kata: AnyKata): WalkedEffect[] {
 const ACTIVE_KATAS: AnyKata[] = KATA_REGISTRY;
 const PASSIVE_KATAS: AnyKata[] = PASSIVE_KATA_REGISTRY;
 const MANUAL_KATAS: AnyKata[] = MANUAL_KATA_REGISTRY;
-const ALL_KATAS: AnyKata[] = [...ACTIVE_KATAS, ...PASSIVE_KATAS, ...MANUAL_KATAS];
+const KIHOS: AnyKata[] = KIHO_REGISTRY;
+const ALL_KATAS: AnyKata[] = [...ACTIVE_KATAS, ...PASSIVE_KATAS, ...MANUAL_KATAS, ...KIHOS];
 
 const WALKED: WalkedEffect[] = ALL_KATAS.flatMap((kata) => collectEffects(kata));
 
@@ -220,6 +228,7 @@ describe("kata-registry integrity — cross-registry invariants", () => {
     const keys = ALL_KATAS.flatMap((k) => [
       k.cardNote,
       k.informationalNote,
+      k.enhancement?.note,
       ...(k.onOpportunity ?? []).flatMap((o: AnyKata) => [o.spendKey, o.hint]),
     ]).filter(Boolean);
     for (const key of keys) {
@@ -247,7 +256,8 @@ describe("kata-registry integrity — cross-registry invariants", () => {
    * as each phase lands, the corresponding entry below should be removed. An
    * entry with no comment explaining *why* it's still unused is a smell.
    */
-  const KNOWN_UNUSED_EFFECT_TYPES: string[] = [];
+  // Kihō base (K0) adds these for the kihō registry, which ticket K1 fills.
+  const KNOWN_UNUSED_EFFECT_TYPES: string[] = ["gain_void", "choice", "clear_technique_effects"];
 
   it("every EFFECT_TYPE is used by the registry or explicitly listed as known-unused", () => {
     const usedTypes = new Set(WALKED.map((w) => w.effect.type));

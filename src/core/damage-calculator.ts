@@ -88,14 +88,16 @@ export function calculateDamage(l5rData, attacker) {
  *
  * If no equipped armor is present, the function safely returns 0.
  *
- * Only physical resistance is evaluated here. Other resistance
- * types supported by the system (e.g., supernatural) are ignored.
+ * Physical by default; `type: "supernatural"` reads the armor's
+ * supernatural resistance (kihō supernatural damage). Kata resistance buffs
+ * only apply to physical resistance.
  *
  * @param {Actor} target - Actor receiving the attack
+ * @param {"physical"|"supernatural"} [type] - Which armor resistance to read
  * @returns {number}
- * Physical armor resistance value.
+ * Armor resistance value of that type.
  */
-export function getArmorResistance(target) {
+export function getArmorResistance(target, type = "physical") {
   let resistance = 0;
 
   if (!target.items) {
@@ -109,10 +111,13 @@ export function getArmorResistance(target) {
   if (equippedArmor.length > 0) {
     const armor = equippedArmor[0];
 
-    if (armor.system?.armor?.physical !== undefined) {
-      resistance = parseInt(armor.system.armor.physical) || 0;
+    if (armor.system?.armor?.[type] !== undefined) {
+      resistance = parseInt(armor.system.armor[type]) || 0;
     }
   }
+
+  // Kata resistance buffs (Striking as Earth/Water) only affect physical resistance.
+  if (type !== "physical") return resistance;
 
   const kataResistanceBuff =
     typeof target.getFlag === "function"
