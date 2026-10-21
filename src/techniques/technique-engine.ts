@@ -14,6 +14,7 @@ import {
   getStrife,
 } from "../core/actor-utils";
 import { createCriticalStrikeMessage } from "../ui/chat-messages";
+import { getVoidPoints } from "../core/actor-utils";
 import { getArmorResistance } from "../core/damage-calculator";
 import {
   getEquippedWeapon,
@@ -26,6 +27,7 @@ import {
   createKataSuccessMessage,
   createKataFailureMessage,
   createResistanceRollRequestMessage,
+  createChoiceCard,
 } from "./technique-chat";
 import { KATA_REGISTRY, SKILL_CATEGORY_MAP } from "./kata-registry";
 import {
@@ -164,7 +166,23 @@ export async function applyEffect(effect, ctx, targets) {
     else skipped.push(t.name);
   }
 
-  const summary = await handler(effect, ctx, filtered);
+  // "Once per scene" (per target): a scene is tracked as a combat, so
+  // outside combat there is no restriction.
+  const onceKey = effect.oncePerScene ? `${ctx.kata?.names?.[0] ?? "technique"}:${effect.type}` : null;
+  const combatId = game.combat?.id ?? null;
+  let eligible = filtered;
+  if (onceKey && combatId) {
+    eligible = filtered.filter((t) => (t.getFlag(MODULE_ID, "techniqueUses") ?? {})[onceKey] !== combatId);
+    for (const t of filtered) if (!eligible.includes(t)) skipped.push(t.name);
+  }
+
+  const summary = await handler(effect, ctx, eligible);
+  if (onceKey && combatId) {
+    for (const t of eligible) {
+      const uses = t.getFlag(MODULE_ID, "techniqueUses") ?? {};
+      await t.setFlag(MODULE_ID, "techniqueUses", { ...uses, [onceKey]: combatId });
+    }
+  }
   if (summary && skipped.length) summary.skipped = skipped;
   return summary;
 }
@@ -230,7 +248,9 @@ async function applyDamageEffect(effect, ctx, targets) {
   const results = [];
   for (const target of targets) {
     const raw = resolveFormula(effect.formula, ctx, target);
-    const armor = ignoresArmor ? 0 : getArmorResistance(target);
+    const armor = ignoresArmor
+      ? 0
+      : getArmorResistance(target, effect.damageType === "supernatural" ? "supernatural" : "physical");
     // `increasesPrior`: this damage raises a hit already dealt (Flowing Water
     // Strike, Spinning Blades), so resistance is only subtracted once.
     const prior = effect.increasesPrior ? resolveFormula(effect.increasesPrior, ctx, target) : null;
@@ -463,6 +483,53 @@ async function applyForceStanceEffect(effect, ctx, targets) {
   return { type: "force_stance", stance, targets: applied };
 }
 
+/** Gains Void points up to the maximum (Touch the Void Dragon). Reports what was actually gained. */
+async function applyGainVoidEffect(effect, ctx, targets) {
+  const results = [];
+  for (const target of targets) {
+    if (target.system?.void_points?.value === undefined) continue;
+    const current = getVoidPoints(target);
+    const max = parseInt(target.system.void_points.max);
+    const next = Number.isNaN(max) ? current + (effect.amount ?? 1) : Math.min(max, current + (effect.amount ?? 1));
+    if (next > current) await target.update({ "system.void_points.value": next });
+    results.push({ target: target.name, amount: next - current });
+  }
+  return { type: "gain_void", results };
+}
+
+/**
+ * Posts a choice card per target: buttons for whoever chooses (the
+ * attacker or the target), each option carrying its own effects. Options
+ * whose `when` fails for that target are left out. Resolved by
+ * technique-choice.ts through the GM relay.
+ */
+async function applyChoiceEffect(effect, ctx, targets) {
+  const pending = [];
+  for (const target of targets) {
+    const options = (effect.options ?? []).filter((o) => evaluatePredicate(o.when, ctx, target));
+    if (options.length === 0) continue;
+    await createChoiceCard({
+      techniqueName: ctx.kata?.names?.[0] ?? "",
+      attacker: ctx.attacker,
+      target,
+      chooser: effect.chooser ?? "attacker",
+      prompt: effect.prompt ?? null,
+      options: options.map((o) => ({ label: o.label, labelArgs: o.labelArgs ?? null, effects: o.effects ?? [] })),
+      extraSuccesses: ctx.extraSuccesses ?? 0,
+    });
+    pending.push(target.name);
+  }
+  return pending.length ? { type: "choice", targets: pending } : null;
+}
+
+/** Ends the kata/kihō effects the module tracks on the targets (Ride the Water Dragon). */
+async function applyClearTechniqueEffects(effect, ctx, targets) {
+  for (const target of targets) {
+    await clearKataEffectsFor(target, { keepKiho: target === ctx.attacker });
+  }
+  return { type: "clear_technique_effects", targets: targets.map((t) => t.name) };
+}
+
 /**
  * Unified dispatcher. `resistance_buff`, `critical_severity_boost` and
  * `condition_lock` used to exist ONLY inside applyPassiveKataOpportunity's
@@ -481,21 +548,27 @@ export const EFFECT_HANDLERS = {
   condition_lock: applyConditionLockEffect,
   critical_strike: applyCriticalStrikeEffect,
   force_stance: applyForceStanceEffect,
+  gain_void: applyGainVoidEffect,
+  choice: applyChoiceEffect,
+  clear_technique_effects: applyClearTechniqueEffects,
 };
 export const EFFECT_TYPES = Object.keys(EFFECT_HANDLERS);
 
 /** Which onX buckets each effect type is legal in. Data for Task 6's registry integrity test — not enforced at runtime here. */
 export const EFFECT_BUCKETS = {
-  condition: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure", "onActivationFailure"],
-  damage: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure", "onUse"],
-  assistance: ["onSuccess"],
-  resistance_roll: ["onSuccess", "onExtraSuccesses", "onOpportunity"],
+  condition: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure", "onActivationFailure", "burst", "choice"],
+  damage: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure", "onUse", "burst", "choice"],
+  assistance: ["onSuccess", "burst"],
+  resistance_roll: ["onSuccess", "onExtraSuccesses", "onOpportunity", "burst", "choice"],
   attack_tn_reduction: ["onSuccess", "onOpportunity"],
   resistance_buff: ["onOpportunity"],
   critical_severity_boost: ["onOpportunity"],
   condition_lock: ["onOpportunity"],
-  critical_strike: ["onSuccess", "onOpportunity"],
-  force_stance: ["onOpportunity", "onFailure"],
+  critical_strike: ["onSuccess", "onOpportunity", "burst"],
+  force_stance: ["onOpportunity", "onFailure", "burst", "choice"],
+  gain_void: ["onSuccess", "onOpportunity", "burst", "choice"],
+  choice: ["onSuccess", "onOpportunity", "burst"],
+  clear_technique_effects: ["onSuccess", "burst"],
 };
 
 export const DURATION_EXPIRY = {
@@ -603,44 +676,58 @@ export async function processEndOfTurnKataEffects(combatantActorId) {
 }
 
 /**
- * Removes ALL activeKataEffects from all actors (called on combat end).
+ * Removes every kata/kihō effect the module tracks on one actor: timed
+ * effects and their statuses, resistance / TN / severity flags, condition
+ * locks and (unless `keepKiho`) the active kihō with its aura.
+ *
+ * BUG #11 FIX (kept): the flag cleanups run even when the actor has no
+ * `activeKataEffects` recorded, so an orphaned resistanceBuff /
+ * pendingTnReduction / pendingCriticalSeverityBoost flag never survives.
+ */
+export async function clearKataEffectsFor(actor, { keepKiho = false } = {}) {
+  const effects = actor.getFlag(MODULE_ID, "activeKataEffects") || [];
+
+  const hasBuff = actor.getFlag(MODULE_ID, "resistanceBuff");
+  if (hasBuff) {
+    await actor.unsetFlag(MODULE_ID, "resistanceBuff");
+    await removeResistanceActiveEffects(actor);
+  }
+  const hasTnReduction = actor.getFlag(MODULE_ID, "pendingTnReduction");
+  if (hasTnReduction) {
+    await actor.unsetFlag(MODULE_ID, "pendingTnReduction");
+    await removeTnReductionActiveEffect(actor);
+  }
+  const hasSeverityBoost = actor.getFlag(MODULE_ID, "pendingCriticalSeverityBoost");
+  if (hasSeverityBoost) {
+    await actor.unsetFlag(MODULE_ID, "pendingCriticalSeverityBoost");
+    await removeCriticalSeverityBoostActiveEffect(actor);
+  }
+  if (!keepKiho && actor.getFlag(MODULE_ID, "activeKiho")) {
+    await actor.unsetFlag(MODULE_ID, "activeKiho");
+    await removeKataTokenAura(actor);
+  }
+
+  if (effects.length === 0) return;
+  for (const effect of effects) {
+    if (effect.statusId) {
+      try {
+        await actor.toggleStatusEffect(effect.statusId, { active: false });
+      } catch (e) {
+        logWarn("Could not remove effect on combat end:", e);
+      }
+    }
+  }
+  await actor.unsetFlag(MODULE_ID, "activeKataEffects");
+  await removeConditionLockActiveEffects(actor);
+}
+
+/**
+ * Removes ALL kata effects and active kihō from all actors (called on
+ * combat end, which is also the end of the scene for kihō).
  */
 export async function clearAllKataEffects() {
   for (const actor of kataEffectActors()) {
-    const effects = actor.getFlag(MODULE_ID, "activeKataEffects") || [];
-
-    // BUG #11 FIX: these three cleanups must run for every actor regardless
-    // of whether they have any `activeKataEffects` recorded — an actor whose
-    // effect record was already gone (e.g. a stray flag left by an earlier
-    // bug, or a flag set outside the activeKataEffects bookkeeping) must not
-    // keep an orphaned resistanceBuff/pendingTnReduction/
-    // pendingCriticalSeverityBoost flag past combat end. Moved above the
-    // `effects.length === 0` early-continue below.
-    const hasBuff = actor.getFlag(MODULE_ID, "resistanceBuff");
-    if (hasBuff) await actor.unsetFlag(MODULE_ID, "resistanceBuff");
-    const hasTnReduction = actor.getFlag(MODULE_ID, "pendingTnReduction");
-    if (hasTnReduction) {
-      await actor.unsetFlag(MODULE_ID, "pendingTnReduction");
-      await removeTnReductionActiveEffect(actor);
-    }
-    const hasSeverityBoost = actor.getFlag(MODULE_ID, "pendingCriticalSeverityBoost");
-    if (hasSeverityBoost) {
-      await actor.unsetFlag(MODULE_ID, "pendingCriticalSeverityBoost");
-      await removeCriticalSeverityBoostActiveEffect(actor);
-    }
-
-    if (effects.length === 0) continue;
-    for (const effect of effects) {
-      if (effect.statusId) {
-        try {
-          await actor.toggleStatusEffect(effect.statusId, { active: false });
-        } catch (e) {
-          logWarn("Could not remove effect on combat end:", e);
-        }
-      }
-    }
-    await actor.unsetFlag(MODULE_ID, "activeKataEffects");
-    await removeConditionLockActiveEffects(actor);
+    await clearKataEffectsFor(actor);
   }
   await clearAllKataTokenAuras();
 }

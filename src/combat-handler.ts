@@ -76,10 +76,10 @@ export function registerCombatHandler() {
       const isAttack =
         attackSkills.includes(l5rData.skillId) && l5rData.rnkEnded === true;
       const isFinished = l5rData.rnkEnded === true;
-      // Kata activations handle their own damage — skip normal combat processing
-      const isKataActivation = l5rData.item?.system?.technique_type === "kata";
+      // Kata and kihō activations handle their own damage — skip normal combat processing
+      const isTechniqueActivation = ["kata", "kiho"].includes(l5rData.item?.system?.technique_type);
 
-      if (!isAttack || !isFinished || isKataActivation) return;
+      if (!isAttack || !isFinished || isTechniqueActivation) return;
 
       const attacker = rollActor(message, l5rData);
 

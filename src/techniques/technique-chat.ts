@@ -84,6 +84,14 @@ export const EFFECT_SUMMARY_RENDERERS = {
       stance: ringLabel(e.stance),
       targets: e.targets.join(", "),
     }),
+  gain_void: (e) =>
+    e.results
+      .map((r) => game.i18n.format("l5r5e-combat-helper.kata.chat.voidGained", { target: r.target, amount: r.amount }))
+      .join("<br>"),
+  choice: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.choicePending", { targets: e.targets.join(", ") }),
+  clear_technique_effects: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.techniqueEffectsCleared", { targets: e.targets.join(", ") }),
 };
 
 /** Localized ring name ("earth" → "Tierra"). */
@@ -361,6 +369,53 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
           skillId: roll.skillId ?? null,
           tn: roll.tn ?? 0,
           totalSuccess: roll.totalSuccess ?? 0,
+          used: false,
+        },
+      },
+    },
+  });
+}
+
+/** Localizes a choice option label (`labelArgs` may name a condition or a ring). */
+export function choiceLabel(option) {
+  const args = { ...(option.labelArgs ?? {}) };
+  if (args.statusId) args.condition = game.i18n.localize(`l5r5e-combat-helper.conditions.${args.statusId}`);
+  if (args.ring) args.stance = ringLabel(args.ring);
+  return game.i18n.format(option.label, args);
+}
+
+/**
+ * Creates a choice card: one button per option for whoever chooses
+ * (`chooser`: the attacker or the target). Resolved on the GM by
+ * technique-choice.ts; visible to everyone so the table sees the outcome.
+ */
+export async function createChoiceCard({ techniqueName, attacker, target, chooser, prompt, options, extraSuccesses = 0 }) {
+  const chooserActor = chooser === "target" ? target : attacker;
+  const buttons = options
+    .map((o, i) => `<button class="technique-choice-btn" data-index="${i}">${choiceLabel(o)}</button>`)
+    .join("");
+  const content = `
+    <div class="l5r5e-combat-helper technique-choice">
+      <h3>⚖️ ${techniqueName}</h3>
+      <p>${game.i18n.format(prompt ?? "l5r5e-combat-helper.kata.chat.choicePrompt", {
+        chooser: chooserActor.name,
+        target: target.name,
+      })}</p>
+      <div class="technique-choice-buttons">${buttons}</div>
+    </div>`;
+
+  await ChatMessage.create({
+    content,
+    speaker: ChatMessage.getSpeaker({ actor: chooserActor }),
+    flags: {
+      "l5r5e-combat-helper": {
+        techniqueChoice: {
+          techniqueName,
+          attackerId: actorRef(attacker),
+          targetId: actorRef(target),
+          chooser,
+          options,
+          extraSuccesses,
           used: false,
         },
       },

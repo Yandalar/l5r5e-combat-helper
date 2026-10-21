@@ -5,6 +5,7 @@ import {
   getEquippedWeapon,
   getSecondaryWeapon,
   resolveAttackWeapon,
+  PUNCH_PROFILE,
   getWeaponBaseDamage,
   getWeaponDeadliness,
 } from "../../src/core/weapon-utils";
@@ -117,6 +118,33 @@ describe("resolveAttackWeapon", () => {
   it("tolerates a null l5rData", () => {
     const attacker = createMockActor({ items: [createMockWeapon({ id: "equipped" })] });
     expect(resolveAttackWeapon(null, attacker).id).toBe("equipped");
+  });
+  describe("unarmed rolls", () => {
+    const katana = () => createMockWeapon({ id: "katana", system: { skill: "melee", damage: 4 } });
+    const kick = () => createMockWeapon({ id: "kick", system: { skill: "unarmed", damage: 2, deadliness: 1 } });
+
+    it("use the roll's unarmed weapon", () => {
+      const attacker = createMockActor({ items: [katana()] });
+      expect(resolveAttackWeapon({ skillId: "unarmed", item: kick() }, attacker).id).toBe("kick");
+    });
+
+    it("use an equipped unarmed weapon over the katana", () => {
+      const attacker = createMockActor({ items: [katana(), kick()] });
+      expect(resolveAttackWeapon({ skillId: "unarmed" }, attacker).id).toBe("kick");
+    });
+
+    it("fall back to the punch profile, never the katana", () => {
+      const attacker = createMockActor({ items: [katana()] });
+      const weapon = resolveAttackWeapon({ skillId: "unarmed", item: { type: "technique" } }, attacker);
+      expect(weapon).toBe(PUNCH_PROFILE);
+      expect(getWeaponBaseDamage(weapon)).toBe(1);
+      expect(getWeaponDeadliness(weapon)).toBe(2);
+    });
+
+    it("melee rolls are unchanged", () => {
+      const attacker = createMockActor({ items: [katana(), kick()] });
+      expect(resolveAttackWeapon({ skillId: "melee" }, attacker).id).toBe("katana");
+    });
   });
 });
 

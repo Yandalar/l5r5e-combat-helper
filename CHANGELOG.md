@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Kihō base**:
+  - Kihō rolled from the sheet are detected. A successful roll activates the kihō's enhancement (one per character; another kihō replaces it) and resolves its burst effect by bonus successes.
+  - The card has an "End kihō" button, and combat end clears active kihō.
+  - Individual kihō are added in the next tickets.
+- Choice cards: a technique can let the attacker or the target pick an option, and the GM's client applies it.
+
 - **16 more katas from the Core Rulebook**:
   - Active: Iaijutsu Cut: Crossing Blade, Iaijutsu Cut: Rising Blade, Flowing Water Strike, Crimson Leaves Strike, Heartpiercing Strike and Pin the Fan.
   - Passive (opportunity cards on a matching attack roll): Breath of Wind Style, Crashing Wave Style, Disappearing World Style, Iron in the Mountains Style, Rushing Avalanche Style, Spinning Blades Style, Pelting Hail Style, Open-Hand Style and Veiled Menace Style.
@@ -21,6 +27,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Unarmed attacks dealt the equipped weapon's damage (e.g. a katana). They now use the roll's or an equipped unarmed weapon, or the punch profile (damage 1, deadliness 2).
 - Critical strikes, mitigation, Shattering Parry, Void defense, opportunity criticals, difficulty changes and target reassignment now follow unlinked tokens instead of the sidebar actor that shares their id.
 
 ## [1.1.0] - 2026-10-21
