@@ -16,7 +16,7 @@ An automation module for Foundry VTT that streamlines combat for the Legend of t
 - **Void Reaction – Don't Defend** — Targets may spend 1 Void Point to willingly accept a Critical Strike instead of defending
 - **Shattering Parry** — After rolling Fitness, characters may reroll all mitigation dice at the cost of their weapon gaining the Damaged quality
 - **Attitude Effects** — Automatically applies the mechanical effects of Air, Fire, and Earth stances: Air increases incoming attack TN, Fire adds strife symbols as bonus damage, Earth blocks opportunity-based critical strikes
-- **Katas** — Detects kata rolls from the character sheet and applies their effects to the targets: conditions, damage, resistance rolls, timed buffs and debuffs that expire with the turn order (Soaring Slice, Lord Hida's Grip, Coiling Serpent Style, Striking as Earth/Fire/Water, Bear's Swipe Style)
+- **Katas** — Detects kata rolls from the character sheet and applies their effects to the targets: conditions, damage, critical strikes, forced stances, resistance rolls (with ring-dependent TNs), timed buffs and debuffs that expire with the turn order. Covers every Core Rulebook kata the module can resolve (22 of 32) plus Bear's Swipe Style; manual parts are shown as reminders on the card
 - **Player-friendly kata cards** — Players spend their own kata opportunities from the chat; the GM's client applies the effect
 - **GM Target Assignment** — Assign or reassign the target of any attack roll after the fact, reverting and reapplying damage automatically
 - **GM Difficulty Change** — Retroactively change the TN of any roll; all downstream effects are reverted and recalculated

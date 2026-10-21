@@ -48,7 +48,7 @@ function target(actor: any): void {
  * Coiling Serpent Style — active kata end to end.
  * - Activation: skill=melee, ring in [earth,air,water,fire,void], difficulty=2
  * - On success: no direct effects (onSuccess: [])
- * - On opportunity: cost=1 → Immobilized condition on target (until_next_turn)
+ * - On opportunity: cost=2 → Immobilized condition on target (until_next_turn)
  * - The weapon-lock half of the Kata has no engine support and is only
  *   surfaced as a fixed informational line — not asserted here since it
  *   requires driving the DOM button-click handler, which is not the pattern
@@ -128,7 +128,7 @@ describe("Coiling Serpent Style — active kata end to end", () => {
         stance: "earth",
         difficulty: 2,
         totalSuccess: 2,
-        opportunity: 1,
+        opportunity: 2,
       }),
     );
 
@@ -139,6 +139,22 @@ describe("Coiling Serpent Style — active kata end to end", () => {
       targetIds: ["npc-cs"],
       used: false,
     });
+  });
+
+  it("omits the opportunity flag when there are fewer opportunities than the cost (2)", async () => {
+    target(npc);
+
+    await onCreate(
+      kataMessage(attacker, {
+        skillId: "melee",
+        stance: "earth",
+        difficulty: 2,
+        totalSuccess: 2,
+        opportunity: 1,
+      }),
+    );
+
+    expect(g().game.messages.at(-1).getFlag(NS, "kataOpportunityData")).toBeUndefined();
   });
 
   it("omits the opportunity flag when no opportunities are available", async () => {

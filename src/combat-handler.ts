@@ -14,6 +14,7 @@
  * - Generate appropriate chat feedback messages
  */
 
+import { actorRef, rollActor } from "./core/actor-refs";
 import {
   getCurrentFatigue,
   getEndurance,
@@ -80,9 +81,7 @@ export function registerCombatHandler() {
 
       if (!isAttack || !isFinished || isKataActivation) return;
 
-      const attacker = message.speaker?.actor
-        ? game.actors.get(message.speaker.actor)
-        : null;
+      const attacker = rollActor(message, l5rData);
 
       if (!attacker) return;
 
@@ -92,7 +91,7 @@ export function registerCombatHandler() {
         const targets = Array.from(game.user.targets);
         if (targets.length === 0) {
           await message.setFlag("l5r5e-combat-helper", "pendingTarget", {
-            attackerId: attacker.id,
+            attackerId: actorRef(attacker),
           });
           ui.notifications.warn(
             game.i18n.localize("l5r5e-combat-helper.notifications.noTargets"),
@@ -163,8 +162,8 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
   const originalTn = (l5rData.difficulty || 2) + airBonus;
 
   const attackData = {
-    attackerId: attacker.id,
-    targetId: target.id,
+    attackerId: actorRef(attacker),
+    targetId: actorRef(target),
     weaponId: equippedWeapon?.id || null,
     rawDamage,
     armorResistance,

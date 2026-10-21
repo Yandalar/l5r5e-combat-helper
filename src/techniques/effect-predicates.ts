@@ -25,6 +25,7 @@ export const PREDICATE_EVALUATORS = {
   shortfall_lte: (v, ctx) => (ctx.resistance?.shortfall ?? Infinity) <= v,
   shortfall_gte: (v, ctx) => (ctx.resistance?.shortfall ?? -1) >= v,
   activation_shortfall_lte: (v, ctx) => Math.max(0, ctx.tn - ctx.totalSuccess) <= v,
+  activation_failed: (v, ctx) => (ctx.totalSuccess < ctx.tn) === v,
   resistance_failed: (v, ctx) => (ctx.resistance?.success === false) === v,
   extra_successes_gte: (v, ctx) => ctx.extraSuccesses >= v,
   all: (v, ctx, t) => v.every((p) => evaluatePredicate(p, ctx, t)),

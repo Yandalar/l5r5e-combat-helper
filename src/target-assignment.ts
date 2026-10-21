@@ -17,6 +17,7 @@
  * 5. On confirm: prior fatigue is reverted, new damage is processed.
  */
 
+import { resolveActor } from "./core/actor-refs";
 import { resolveMessageId, confirmDialog, contextMenuEntry } from "./core/compat-utils";
 import { revertFatigueDamage } from "./core/actor-utils";
 import {
@@ -117,7 +118,7 @@ function addAssignTargetOption(html, options) {
         attackData?.attackerId ||
         pendingTarget?.attackerId ||
         message.speaker?.actor;
-      const attacker = attackerId ? game.actors.get(attackerId) : null;
+      const attacker = attackerId ? resolveActor(attackerId) : null;
 
       if (!attacker) {
         ui.notifications.warn(
@@ -148,7 +149,7 @@ function addAssignTargetOption(html, options) {
         let confirmed = false;
 
         if (attackData?.targetId) {
-          const oldTarget = game.actors.get(attackData.targetId);
+          const oldTarget = resolveActor(attackData.targetId);
           confirmed = await confirmDialog({
             title: game.i18n.localize(
               "l5r5e-combat-helper.dialog.assignTarget.title",
@@ -200,7 +201,7 @@ function addAssignTargetOption(html, options) {
 
           // Revert fatigue from the previous target
           if (attackData.finalDamage > 0) {
-            const oldTarget = game.actors.get(attackData.targetId);
+            const oldTarget = resolveActor(attackData.targetId);
             if (oldTarget) {
               await revertFatigueDamage(oldTarget, attackData.finalDamage);
             }

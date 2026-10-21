@@ -10,7 +10,10 @@ import {
   getSkillRank,
   applyFatigue,
   applyStrife,
+  getCurrentFatigue,
+  getStrife,
 } from "../core/actor-utils";
+import { createCriticalStrikeMessage } from "../ui/chat-messages";
 import { getArmorResistance } from "../core/damage-calculator";
 import {
   getEquippedWeapon,
@@ -82,6 +85,8 @@ export const FORMULA_RESOLVERS = {
   opportunities_spent: (f, ctx) => ctx.opportunitiesSpent,
   weapon_base: (f, ctx) => getWeaponBaseDamage(resolveWeaponSlot(ctx, f.slot)),
   weapon_deadliness: (f, ctx) => getWeaponDeadliness(resolveWeaponSlot(ctx, f.slot)),
+  /** Rank in the skill of the roll that triggered the kata (passive katas: "the skill used for the check"). */
+  attacker_roll_skill_rank: (f, ctx) => getSkillRank(ctx.attacker, ctx.rollSkillId ?? ctx.l5rData?.skillId, SKILL_CATEGORY_MAP),
   resistance_shortfall: (f, ctx) => ctx.resistance?.shortfall ?? 0,
 };
 export const FORMULA_SOURCES = Object.keys(FORMULA_RESOLVERS);
@@ -122,6 +127,12 @@ export function resolveTargets(effectTarget, ctx) {
     case "target":
     case "all_against_target":
       return ctx.targets;
+    // "One of the targets of your action" (rank-4 styles, Spinning Blades...).
+    case "first_target":
+      return ctx.targets.slice(0, 1);
+    // "One target per N opportunities spent" (Open-Hand Style): N = ctx.costStep.
+    case "first_n_by_cost":
+      return ctx.targets.slice(0, Math.floor((ctx.opportunitiesSpent || 0) / (ctx.costStep || 1)));
     default:
       logWarn("Unknown effect target:", effectTarget);
       return [];
@@ -159,6 +170,7 @@ export async function applyEffect(effect, ctx, targets) {
 }
 
 async function applyConditionEffect(effect, ctx, targets) {
+  if (effect.remove) return removeConditionsEffect(effect, targets);
   const applied = [];
   for (const target of targets) {
     try {
@@ -186,6 +198,23 @@ async function applyConditionEffect(effect, ctx, targets) {
   };
 }
 
+/** `remove: true` + `statusIds`: ends whichever of those conditions the targets suffer (Flowing Water Strike). */
+async function removeConditionsEffect(effect, targets) {
+  const removed = [];
+  for (const target of targets) {
+    for (const statusId of effect.statusIds ?? []) {
+      if (!hasCondition(target, statusId)) continue;
+      try {
+        await target.toggleStatusEffect(statusId, { active: false });
+        removed.push(`${target.name} (${game.i18n.localize(`l5r5e-combat-helper.conditions.${statusId}`)})`);
+      } catch (e) {
+        logWarn(`Could not remove ${statusId} from ${target.name}:`, e);
+      }
+    }
+  }
+  return { type: "condition", remove: true, targets: removed };
+}
+
 /**
  * Supports `resource`/`mode` (fatigue|strife, add|remove) — the shape Phase
  * 2/3 katas need, defined now so the signature does not need to change
@@ -202,7 +231,12 @@ async function applyDamageEffect(effect, ctx, targets) {
   for (const target of targets) {
     const raw = resolveFormula(effect.formula, ctx, target);
     const armor = ignoresArmor ? 0 : getArmorResistance(target);
-    const amount = Math.max(0, raw - armor);
+    // `increasesPrior`: this damage raises a hit already dealt (Flowing Water
+    // Strike, Spinning Blades), so resistance is only subtracted once.
+    const prior = effect.increasesPrior ? resolveFormula(effect.increasesPrior, ctx, target) : null;
+    const amount = prior === null
+      ? Math.max(0, raw - armor)
+      : Math.max(0, prior + raw - armor) - Math.max(0, prior - armor);
     if (amount <= 0) continue;
     const signed = mode === "remove" ? -amount : amount;
     // Per-target error isolation: applyFatigue/applyStrife throw when no
@@ -210,13 +244,17 @@ async function applyDamageEffect(effect, ctx, targets) {
     // actor schema). One target failing must not abort the whole effect —
     // skip it and keep processing the rest, same as the pre-refactor code
     // that inlined this update and did console.error + continue.
+    const before = resource === "strife" ? getStrife(target) : getCurrentFatigue(target);
+    let after;
     try {
-      await apply(target, signed);
+      after = await apply(target, signed);
     } catch (e) {
       logWarn(`Could not apply ${resource} damage to ${target.name}:`, e);
       continue;
     }
-    results.push({ target: target.name, damage: amount, resource, mode });
+    // Recovery is reported as what was actually removed (clamped at 0).
+    const reported = mode === "remove" ? Math.max(0, before - after) : amount;
+    results.push({ target: target.name, damage: reported, resource, mode });
   }
   return { type: "damage", resource, mode, results, ignoresArmor };
 }
@@ -262,13 +300,20 @@ async function applyAttackTnReductionEffect(effect, ctx, targets) {
 async function scheduleResistanceRolls(effect, ctx, targets) {
   const skillCatId = SKILL_CATEGORY_MAP[effect.skill] ?? "martial";
   const scheduled = [];
+  // force_stance needs the stance the attacker picked on the card, which
+  // the resistance-completion ctx no longer has.
+  const onFailure = (effect.onFailure ?? []).map((e) =>
+    e.type === "force_stance" && !e.stance ? { ...e, stance: ctx.chosenStance ?? null } : e,
+  );
   for (const target of targets) {
     const difficulty = resolveFormula(effect.difficulty, ctx, target);
     await target.setFlag(MODULE_ID, "pendingResistanceRoll", {
       skill: effect.skill,
       skillCatId,
       difficulty,
-      onFailure: effect.onFailure,
+      ringDifficulty: effect.ringDifficulty ?? null,
+      failureNote: effect.failureNote ?? null,
+      onFailure,
       attackerId: actorRef(ctx.attacker),
     });
     await createResistanceRollRequestMessage(
@@ -277,7 +322,9 @@ async function scheduleResistanceRolls(effect, ctx, targets) {
       effect.skill,
       skillCatId,
       difficulty,
-      effect.onFailure,
+      onFailure,
+      effect.ringDifficulty ?? null,
+      effect.failureNote ?? null,
     );
     scheduled.push({ target, difficulty });
   }
@@ -380,6 +427,43 @@ async function applyConditionLockEffect(effect, ctx, targets) {
 }
 
 /**
+ * Posts a critical strike card (the usual Fitness → mitigation chain) with a
+ * kata-defined severity and, optionally, a special mitigation TN
+ * (Heartpiercing Strike: TN 3, Air 4, Water 1).
+ */
+async function applyCriticalStrikeEffect(effect, ctx, targets) {
+  const weapon = resolveWeaponSlot(ctx, effect.slot);
+  const results = [];
+  for (const target of targets) {
+    const severity = Math.max(1, resolveFormula(effect.severity, ctx, target));
+    await createCriticalStrikeMessage(target, ctx.attacker, weapon, null, "kata", {
+      severity,
+      mitigationTn: effect.mitigationTn ?? null,
+      ringDifficulty: effect.ringDifficulty ?? null,
+      kataName: ctx.kata?.names?.[0] ?? null,
+    });
+    results.push({ target: target.name, severity });
+  }
+  return { type: "critical_strike", results };
+}
+
+/** Changes the targets' stance to the one chosen by the attacker (Open-Hand Style). */
+async function applyForceStanceEffect(effect, ctx, targets) {
+  const stance = effect.stance ?? ctx.chosenStance;
+  if (!stance) return null;
+  const applied = [];
+  for (const target of targets) {
+    try {
+      await target.update({ "system.stance": stance });
+      applied.push(target.name);
+    } catch (e) {
+      logWarn(`Could not change the stance of ${target.name}:`, e);
+    }
+  }
+  return { type: "force_stance", stance, targets: applied };
+}
+
+/**
  * Unified dispatcher. `resistance_buff`, `critical_severity_boost` and
  * `condition_lock` used to exist ONLY inside applyPassiveKataOpportunity's
  * own if/else chain — they are now real handlers here too, so EFFECT_TYPES
@@ -395,19 +479,23 @@ export const EFFECT_HANDLERS = {
   resistance_buff: applyResistanceBuffEffect,
   critical_severity_boost: applyCriticalSeverityBoostEffect,
   condition_lock: applyConditionLockEffect,
+  critical_strike: applyCriticalStrikeEffect,
+  force_stance: applyForceStanceEffect,
 };
 export const EFFECT_TYPES = Object.keys(EFFECT_HANDLERS);
 
 /** Which onX buckets each effect type is legal in. Data for Task 6's registry integrity test — not enforced at runtime here. */
 export const EFFECT_BUCKETS = {
-  condition: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure"],
-  damage: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure"],
+  condition: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure", "onActivationFailure"],
+  damage: ["onSuccess", "onExtraSuccesses", "onOpportunity", "onFailure", "onUse"],
   assistance: ["onSuccess"],
   resistance_roll: ["onSuccess", "onExtraSuccesses", "onOpportunity"],
   attack_tn_reduction: ["onSuccess", "onOpportunity"],
   resistance_buff: ["onOpportunity"],
   critical_severity_boost: ["onOpportunity"],
   condition_lock: ["onOpportunity"],
+  critical_strike: ["onSuccess", "onOpportunity"],
+  force_stance: ["onOpportunity", "onFailure"],
 };
 
 export const DURATION_EXPIRY = {
@@ -572,21 +660,28 @@ export async function applyPassiveKataOpportunity(
   opportunitiesSpent,
   assignedTargets = [],
   chosenCondition = null,
+  roll = {},
 ) {
-  if (!kata.onOpportunity?.length) return null;
-  const oppDef = kata.onOpportunity[0];
+  const oppDef = kata.onOpportunity?.[roll.oppIndex ?? 0];
+  if (!oppDef) return null;
 
+  // `roll` carries what the card persisted from the triggering roll
+  // (weapon, skill, TN, successes, chosen stance), so formulas such as
+  // weapon_base / attacker_roll_skill_rank resolve against the real attack.
   const ctx = {
     attacker,
     targets: assignedTargets,
-    extraSuccesses: 0,
+    extraSuccesses: Math.max(0, (roll.totalSuccess ?? 0) - (roll.tn ?? 0)),
     opportunitiesSpent,
-    tn: 0,
-    totalSuccess: 0,
-    weapon: null,
+    tn: roll.tn ?? 0,
+    totalSuccess: roll.totalSuccess ?? 0,
+    weapon: roll.weapon ?? null,
     resistance: null,
     kata,
     chosenCondition,
+    chosenStance: roll.chosenStance ?? null,
+    rollSkillId: roll.skillId ?? null,
+    costStep: oppDef.costStep ?? 1,
     sourceMessageId: null,
     l5rData: null,
   };
@@ -611,7 +706,14 @@ export async function executeKata(kata, ctx) {
   const success = ctx.totalSuccess >= ctx.tn;
 
   if (!success) {
-    await createKataFailureMessage(kata, ctx.attacker, ctx.totalSuccess, ctx.tn);
+    // "Si fallas, ..." effects (Heartpiercing Strike: the attacker is Disoriented).
+    const failureSummaries = [];
+    for (const effect of kata.onFailure ?? []) {
+      const effectTargets = resolveTargets(effect.target ?? "target", ctx);
+      const summary = await applyEffect(effect, ctx, effectTargets);
+      if (summary) failureSummaries.push(summary);
+    }
+    await createKataFailureMessage(kata, ctx.attacker, ctx.totalSuccess, ctx.tn, failureSummaries);
     return;
   }
 
@@ -646,6 +748,7 @@ export async function executeKata(kata, ctx) {
     ctx.sourceMessageId,
     opportunities,
     ctx.tnReduction ?? 0,
+    ctx.weapon,
   );
 }
 
@@ -673,8 +776,11 @@ export async function executeKataOpportunity(kataName, ctx, opportunityIndex = 0
   // caller that already knows the real spent amount.
   ctx.opportunitiesSpent = ctx.opportunitiesSpent || oppDef.cost || 0;
 
+  const summaries = [];
   for (const effect of oppDef.effects) {
     const effectTargets = resolveTargets(effect.target ?? "target", ctx);
-    await applyEffect(effect, ctx, effectTargets);
+    const summary = await applyEffect(effect, ctx, effectTargets);
+    if (summary) summaries.push(summary);
   }
+  return summaries;
 }

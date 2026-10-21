@@ -19,17 +19,25 @@ import { actorRef } from "../core/actor-refs";
  */
 export const EFFECT_SUMMARY_RENDERERS = {
   condition: (e) =>
-    game.i18n.format("l5r5e-combat-helper.kata.chat.conditionApplied", {
-      statusId: e.statusId,
-      targets: e.targets.join(", "),
-    }),
+    e.remove
+      ? (e.targets.length
+        ? game.i18n.format("l5r5e-combat-helper.kata.chat.conditionRemoved", { targets: e.targets.join(", ") })
+        : null)
+      : game.i18n.format("l5r5e-combat-helper.kata.chat.conditionApplied", {
+        statusId: e.statusId,
+        targets: e.targets.join(", "),
+      }),
   damage: (e) =>
     e.results
       .map((r) =>
         game.i18n.format(
-          r.resource === "strife"
-            ? "l5r5e-combat-helper.kata.chat.strifeApplied"
-            : "l5r5e-combat-helper.kata.chat.damageApplied",
+          r.mode === "remove"
+            ? (r.resource === "strife"
+              ? "l5r5e-combat-helper.kata.chat.strifeRecovered"
+              : "l5r5e-combat-helper.kata.chat.fatigueRecovered")
+            : r.resource === "strife"
+              ? "l5r5e-combat-helper.kata.chat.strifeApplied"
+              : "l5r5e-combat-helper.kata.chat.damageApplied",
           { target: r.target, damage: r.damage },
         ),
       )
@@ -62,7 +70,47 @@ export const EFFECT_SUMMARY_RENDERERS = {
       condition: e.conditionId,
       targets: e.targets.join(", "),
     }),
+  critical_strike: (e) =>
+    e.results
+      .map((r) =>
+        game.i18n.format("l5r5e-combat-helper.kata.chat.criticalStrikeApplied", {
+          target: r.target,
+          severity: r.severity,
+        }),
+      )
+      .join("<br>"),
+  force_stance: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kata.chat.stanceForced", {
+      stance: ringLabel(e.stance),
+      targets: e.targets.join(", "),
+    }),
 };
+
+/** Localized ring name ("earth" → "Tierra"). */
+export function ringLabel(ring) {
+  return game.i18n.localize(`l5r5e-combat-helper.rings.${ring}`);
+}
+
+/** "3 (Tierra 4, Fuego 1)": a base TN plus its per-ring variants (offsets). */
+export function tnWithRings(base, ringDifficulty) {
+  const entries = Object.entries(ringDifficulty ?? {});
+  if (!entries.length) return String(base);
+  return `${base} (${entries.map(([ring, delta]) => `${ringLabel(ring)} ${Math.max(1, base + delta)}`).join(", ")})`;
+}
+
+/** Renders effect summaries as chat lines (unknown/empty summaries are dropped). */
+export function renderEffectLines(summaries) {
+  return (summaries ?? [])
+    .filter(Boolean)
+    .map((e) => (EFFECT_SUMMARY_RENDERERS[e.type] ?? DEFAULT_RENDERER)(e))
+    .filter(Boolean)
+    .join("<br>");
+}
+
+/** Optional fixed i18n line a kata shows on its activation card (manual parts of the kata). */
+function cardNoteHtml(kata) {
+  return kata?.cardNote ? `<p class="kata-card-note"><em>${game.i18n.localize(kata.cardNote)}</em></p>` : "";
+}
 const DEFAULT_RENDERER = (e) => {
   logWarn("No chat renderer for effect summary type:", e.type);
   return null;
@@ -83,16 +131,13 @@ export async function createKataSuccessMessage(
   sourceMessageId,
   opportunityCount,
   tnReduction = 0,
+  weapon = null,
 ) {
   const targetNames = targets.map((t) => t.name).join(", ") || "—";
 
-  const effectLines = appliedEffects
-    .filter(Boolean)
-    .map((e) => (EFFECT_SUMMARY_RENDERERS[e.type] ?? DEFAULT_RENDERER)(e))
-    .filter(Boolean)
-    .join("<br>");
+  const effectLines = renderEffectLines(appliedEffects);
 
-  const hasOpportunityButton = opportunityDefs && opportunityCount > 0;
+  const hasOpportunityButton = opportunityDefs && opportunityCount >= (opportunityDefs[0]?.cost ?? 1);
   let opportunityButton = "";
   if (hasOpportunityButton) {
     opportunityButton = `
@@ -119,6 +164,7 @@ export async function createKataSuccessMessage(
       ${tnReduction > 0 ? `<p><em>${game.i18n.format("l5r5e-combat-helper.kata.chat.tnReduced", { amount: tnReduction })}</em></p>` : ""}
       ${targetNames !== "—" ? `<p><em>${game.i18n.format("l5r5e-combat-helper.kata.chat.targets", { targets: targetNames })}</em></p>` : ""}
       ${effectLines ? `<div class="kata-effects">${effectLines}</div>` : ""}
+      ${cardNoteHtml(kata)}
       ${opportunityButton}
     </div>`;
 
@@ -132,6 +178,7 @@ export async function createKataSuccessMessage(
           attackerId: actorRef(attacker),
           targetIds: targets.map((t) => actorRef(t)),
           extraSuccesses,
+          weaponId: weapon?.id ?? null,
           used: false,
         },
       },
@@ -142,7 +189,8 @@ export async function createKataSuccessMessage(
 /**
  * Creates the failure chat card for a Kata.
  */
-export async function createKataFailureMessage(kata, attacker, totalSuccess, tn) {
+export async function createKataFailureMessage(kata, attacker, totalSuccess, tn, appliedEffects = []) {
+  const effectLines = renderEffectLines(appliedEffects);
   const effectiveTN = typeof tn === "number" ? tn : "?";
   const content = `
     <div class="l5r5e-combat-helper kata-activation-result kata-failure">
@@ -153,6 +201,8 @@ export async function createKataFailureMessage(kata, attacker, totalSuccess, tn)
         extra: 0,
         tn: effectiveTN,
       })}</p>
+      ${effectLines ? `<div class="kata-effects">${effectLines}</div>` : ""}
+      ${cardNoteHtml(kata)}
     </div>`;
 
   await ChatMessage.create({
@@ -171,16 +221,21 @@ export async function createResistanceRollRequestMessage(
   skillCatId,
   difficulty,
   onFailure,
+  ringDifficulty = null,
+  failureNote = null,
 ) {
-  const failureDesc = onFailure
-    .map((e) => {
+  const failureDesc = [
+    ...onFailure.map((e) => {
       if (e.type === "damage")
         return game.i18n.localize("l5r5e-combat-helper.kata.chat.resistDamage");
       if (e.type === "condition")
-        return `${game.i18n.localize("l5r5e-combat-helper.kata.chat.resistCondition")}: ${e.statusId}`;
+        return `${game.i18n.localize("l5r5e-combat-helper.kata.chat.resistCondition")}: ${game.i18n.localize(`l5r5e-combat-helper.conditions.${e.statusId}`)}`;
+      if (e.type === "force_stance")
+        return game.i18n.format("l5r5e-combat-helper.kata.chat.resistStance", { stance: e.stance ? ringLabel(e.stance) : "?" });
       return e.type;
-    })
-    .join(", ");
+    }),
+    ...(failureNote ? [game.i18n.localize(failureNote)] : []),
+  ].join(", ");
 
   const content = `
     <div class="l5r5e-combat-helper kata-resistance-request">
@@ -188,7 +243,7 @@ export async function createResistanceRollRequestMessage(
       <p>${game.i18n.format("l5r5e-combat-helper.kata.chat.resistanceBody", {
         target: target.name,
         skill,
-        tn: difficulty,
+        tn: tnWithRings(difficulty, ringDifficulty),
       })}</p>
       <p><em>${game.i18n.format("l5r5e-combat-helper.kata.chat.resistanceFailEffect", {
         effect: failureDesc,
@@ -216,11 +271,18 @@ export async function createResistanceRollRequestMessage(
 /**
  * Creates a whispered opportunity-spending card for passive katas (e.g. Striking as Earth).
  * Shows one button per possible opportunity spend amount.
+ *
+ * `roll` describes the triggering roll and is persisted on the card so the
+ * GM-side handler can rebuild the context: `oppIndex` (the branch chosen by
+ * its `when`), resolved `costMin`/`costMax`, `weaponId`, `skillId`, `tn`,
+ * `totalSuccess` and the first target's current stance.
  */
-export async function createPassiveKataOpportunityCard(kata, attacker, opportunities, targetIds = [], rollMessageId = null) {
-  const oppDef = kata.onOpportunity[0];
-  const costMin = oppDef.costMin ?? 1;
-  const maxSpend = Math.min(opportunities, oppDef.costMax ?? opportunities);
+export async function createPassiveKataOpportunityCard(kata, attacker, opportunities, targetIds = [], rollMessageId = null, roll = {}) {
+  const oppIndex = roll.oppIndex ?? 0;
+  const oppDef = kata.onOpportunity[oppIndex];
+  const costMin = roll.costMin ?? oppDef.costMin ?? 1;
+  const costStep = oppDef.costStep ?? 1;
+  const maxSpend = Math.min(opportunities, roll.costMax ?? oppDef.costMax ?? opportunities);
 
   // BUG #3 FIX: the player must have at least `costMin` opportunities to
   // spend before the card is worth showing at all — previously the button
@@ -229,33 +291,38 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
   if (opportunities < costMin) return;
 
   const effectType = oppDef.effects[0]?.type ?? "resistance_buff";
+  const baseData = `data-kata-name="${kata.names[0]}" data-attacker-id="${actorRef(attacker)}"`;
 
   let buttons;
   if (effectType === "condition_lock") {
     const conditions = oppDef.effects[0].conditions ?? [];
     buttons = conditions.map((cond) => {
       const conditionName = game.i18n.localize(`l5r5e-combat-helper.conditions.${cond}`);
-      return `<button class="kata-passive-opportunity-btn"
-        data-kata-name="${kata.names[0]}"
-        data-attacker-id="${actorRef(attacker)}"
+      return `<button class="kata-passive-opportunity-btn" ${baseData}
         data-amount="1"
         data-condition="${cond}">
         ${game.i18n.format("l5r5e-combat-helper.kata.chat.passiveLockCondition", { condition: conditionName })}
       </button>`;
     }).join("");
+  } else if (oppDef.chooseStance) {
+    // One button per stance the target is not already in (Open-Hand Style).
+    const stances = ["air", "earth", "fire", "water", "void"].filter((r) => r !== roll.targetStance);
+    buttons = stances.map((stance) => `<button class="kata-passive-opportunity-btn" ${baseData}
+        data-amount="${costMin}"
+        data-stance="${stance}">
+        ${game.i18n.format("l5r5e-combat-helper.kata.chat.passiveForceStance", { amount: costMin, stance: ringLabel(stance) })}
+      </button>`).join("");
   } else {
-    const spendKey = effectType === "critical_severity_boost"
-      ? "l5r5e-combat-helper.kata.chat.passiveSpendSeverityBoost"
-      : "l5r5e-combat-helper.kata.chat.passiveSpend";
-    buttons = Array.from({ length: maxSpend - costMin + 1 }, (_, i) => {
-      const n = costMin + i;
-      return `<button class="kata-passive-opportunity-btn"
-        data-kata-name="${kata.names[0]}"
-        data-attacker-id="${actorRef(attacker)}"
+    const spendKey = oppDef.spendKey
+      ?? (effectType === "critical_severity_boost"
+        ? "l5r5e-combat-helper.kata.chat.passiveSpendSeverityBoost"
+        : "l5r5e-combat-helper.kata.chat.passiveSpend");
+    const amounts = [];
+    for (let n = costMin; n <= maxSpend; n += costStep) amounts.push(n);
+    buttons = amounts.map((n) => `<button class="kata-passive-opportunity-btn" ${baseData}
         data-amount="${n}">
         ${game.i18n.format(spendKey, { amount: n })}
-      </button>`;
-    }).join("");
+      </button>`).join("");
   }
 
   const content = `
@@ -265,6 +332,8 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
         attacker: attacker.name,
         opportunities,
       })}</p>
+      ${oppDef.hint ? `<p><em>${game.i18n.localize(oppDef.hint)}</em></p>` : ""}
+      ${cardNoteHtml(kata)}
       <div class="kata-passive-buttons">${buttons}</div>
     </div>`;
 
@@ -287,6 +356,11 @@ export async function createPassiveKataOpportunityCard(kata, attacker, opportuni
           attackerId: actorRef(attacker),
           targetIds,
           rollMessageId,
+          oppIndex,
+          weaponId: roll.weaponId ?? null,
+          skillId: roll.skillId ?? null,
+          tn: roll.tn ?? 0,
+          totalSuccess: roll.totalSuccess ?? 0,
           used: false,
         },
       },
@@ -302,6 +376,7 @@ export async function createResistanceResultMessage(
   totalSuccess,
   difficulty,
   success,
+  failureNote = null,
 ) {
   const resultIcon = success ? "🛡️" : "💥";
   const resultText = success
@@ -315,6 +390,7 @@ export async function createResistanceResultMessage(
         successes: totalSuccess,
         tn: difficulty,
       })}</p>
+      ${!success && failureNote ? `<p><em>${game.i18n.localize(failureNote)}</em></p>` : ""}
     </div>`;
 
   await ChatMessage.create({

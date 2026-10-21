@@ -11,6 +11,7 @@
  * - Launch the L5R5e roll system for Fitness check
  * - Prepare the roll with appropriate parameters
  */
+import { resolveActor } from "../core/actor-refs";
 import { onRenderChatMessage } from "../core/compat-utils";
 
 /**
@@ -80,10 +81,10 @@ async function handleCriticalStrikeRollClick(message, button) {
       return;
     }
 
-    const { targetId, attackerId, weaponDeadliness, originRollId } = criticalData;
+    const { targetId, attackerId, weaponDeadliness, originRollId, mitigationTn, ringDifficulty } = criticalData;
 
     // Get the target actor
-    const target = game.actors.get(targetId);
+    const target = resolveActor(targetId);
     if (!target) {
       ui.notifications.error(
         game.i18n.localize("l5r5e-combat-helper.notifications.targetNotFound"),
@@ -105,7 +106,7 @@ async function handleCriticalStrikeRollClick(message, button) {
       "l5r5e-combat-helper.chat.criticalStrike.rollingButton",
     );
 
-    await launchFitnessCheck(target, weaponDeadliness, message.id, originRollId);
+    await launchFitnessCheck(target, weaponDeadliness, message.id, originRollId, mitigationTn, ringDifficulty);
 
     // Update button text but keep it disabled
     // It will only be re-enabled if there's an error, or permanently disabled when resolved
@@ -147,7 +148,7 @@ async function handleCriticalStrikeRollClick(message, button) {
  * @param {number} weaponDeadliness - The deadliness of the attacking weapon
  * @param {string} messageId - The ID of the critical strike message
  */
-async function launchFitnessCheck(target, weaponDeadliness, messageId, originRollId = null) {
+async function launchFitnessCheck(target, weaponDeadliness, messageId, originRollId = null, mitigationTn = null, ringDifficulty = null) {
   const isNpc = target.type === "npc";
 
   if (!isNpc) {
@@ -167,11 +168,14 @@ async function launchFitnessCheck(target, weaponDeadliness, messageId, originRol
       weaponDeadliness,
       criticalMessageId: messageId,
       originRollId,
+      mitigationTn,
+      ringDifficulty,
     });
 
+    const difficulty = mitigationTn ?? 1;
     const dialogParams = isNpc
-      ? { actor: target, skillId: "martial", difficulty: 1, difficultyHidden: false }
-      : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty: 1, difficultyHidden: false };
+      ? { actor: target, skillId: "martial", difficulty, difficultyHidden: false }
+      : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty, difficultyHidden: false };
 
     new game.l5r5e.DicePickerDialog(dialogParams).render(true);
   } catch (error) {

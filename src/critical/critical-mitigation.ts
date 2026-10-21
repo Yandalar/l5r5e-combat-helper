@@ -16,6 +16,7 @@
  * 7. Update the original critical strike message to mark it resolved
  */
 
+import { actorRef, resolveActor, rollActor, speakerActor } from "../core/actor-refs";
 import { applyCriticalEffect } from "./critical-effects-application";
 import { isWeaponSharp } from "./critical-effects-table";
 import { isResponsibleClient } from "../core/compat-utils";
@@ -45,10 +46,7 @@ export function registerCriticalMitigationHandler() {
       const isFinished = l5rData.rnkEnded === true;
       if (!isFinished) return;
 
-      const actorId = message.speaker?.actor;
-      if (!actorId) return;
-
-      const actor = game.actors.get(actorId);
+      const actor = rollActor(message, l5rData);
       if (!actor) return;
 
       // Check if the actor has a pending mitigation request
@@ -106,10 +104,14 @@ async function processCriticalMitigation(
   mitigationData,
   rollMessage,
 ) {
-  const { weaponDeadliness, criticalMessageId, originRollId } = mitigationData;
+  const { weaponDeadliness, criticalMessageId, originRollId, mitigationTn, ringDifficulty } = mitigationData;
 
   const totalSuccesses = l5rData.summary?.totalSuccess || 0;
-  const tn = l5rData.difficulty || 1;
+  // A kata may impose its own TN, varying with the ring rolled (Heartpiercing
+  // Strike: TN 3, Air 4, Water 1); otherwise the TN of the roll itself.
+  const tn = mitigationTn
+    ? Math.max(1, mitigationTn + (ringDifficulty?.[l5rData.stance] ?? 0))
+    : l5rData.difficulty || 1;
 
   const rollSucceeded = totalSuccesses >= tn;
   const bonusSuccesses = Math.max(0, totalSuccesses - tn);
@@ -154,7 +156,7 @@ async function processCriticalMitigation(
     );
 
     if (criticalData) {
-      attacker = game.actors.get(criticalData.attackerId);
+      attacker = resolveActor(criticalData.attackerId);
       attackerWeaponId = criticalData.weaponId || null;
 
       if (criticalData.weaponId) {
@@ -171,7 +173,7 @@ async function processCriticalMitigation(
 
   // Fallback attacker detection
   if (!attacker && criticalMessage?.speaker?.actor) {
-    attacker = game.actors.get(criticalMessage.speaker.actor);
+    attacker = speakerActor(criticalMessage);
   }
 
   await applyCriticalEffect(actor, finalSeverity, ringUsed, weapon, attacker);
@@ -188,7 +190,7 @@ async function processCriticalMitigation(
       "mitigationResult",
       {
         originRollId: originRollId || null,
-        targetId: actor.id,
+        targetId: actorRef(actor),
         finalSeverity,
         ringUsed,
         wasWeaponSharp,
@@ -205,10 +207,12 @@ async function processCriticalMitigation(
       "l5r5e-combat-helper",
       "shatteringParryData",
       {
-        targetId: actor.id,
-        attackerId: attacker?.id || null,
+        targetId: actorRef(actor),
+        attackerId: actorRef(attacker),
         weaponDeadliness,
         criticalMessageId,
+        mitigationTn: mitigationTn ?? null,
+        ringDifficulty: ringDifficulty ?? null,
         finalSeverity,
         ringUsed,
         weaponId: attackerWeaponId,

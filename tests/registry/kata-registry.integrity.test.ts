@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   KATA_REGISTRY,
   PASSIVE_KATA_REGISTRY,
+  MANUAL_KATA_REGISTRY,
   SKILL_CATEGORY_MAP,
 } from "../../src/techniques/kata-registry";
 import {
@@ -58,6 +59,14 @@ function collectEffects(kata: AnyKata): WalkedEffect[] {
   if (Array.isArray(kata.onSuccess)) {
     walkEffectList(kataName, kata.onSuccess, "onSuccess", out);
   }
+  // Kata-level "if you fail" effects (a failed activation roll), distinct
+  // from resistance_roll.onFailure.
+  if (Array.isArray(kata.onFailure)) {
+    walkEffectList(kataName, kata.onFailure, "onActivationFailure", out);
+  }
+  if (Array.isArray(kata.onUse)) {
+    walkEffectList(kataName, kata.onUse, "onUse", out);
+  }
   if (Array.isArray(kata.onExtraSuccesses?.effects)) {
     walkEffectList(kataName, kata.onExtraSuccesses.effects, "onExtraSuccesses", out);
   }
@@ -73,7 +82,8 @@ function collectEffects(kata: AnyKata): WalkedEffect[] {
 
 const ACTIVE_KATAS: AnyKata[] = KATA_REGISTRY;
 const PASSIVE_KATAS: AnyKata[] = PASSIVE_KATA_REGISTRY;
-const ALL_KATAS: AnyKata[] = [...ACTIVE_KATAS, ...PASSIVE_KATAS];
+const MANUAL_KATAS: AnyKata[] = MANUAL_KATA_REGISTRY;
+const ALL_KATAS: AnyKata[] = [...ACTIVE_KATAS, ...PASSIVE_KATAS, ...MANUAL_KATAS];
 
 const WALKED: WalkedEffect[] = ALL_KATAS.flatMap((kata) => collectEffects(kata));
 
@@ -83,6 +93,7 @@ const ES = es as Record<string, string>;
 /** Every statusId-shaped value (condition.statusId, condition_lock.conditions[]) found while walking. */
 function statusIdsUsedBy(effect: AnyEffect): string[] {
   if (effect.type === "condition" && effect.statusId) return [effect.statusId];
+  if (effect.type === "condition" && Array.isArray(effect.statusIds)) return effect.statusIds;
   if (effect.type === "condition_lock" && Array.isArray(effect.conditions)) return effect.conditions;
   return [];
 }
@@ -98,10 +109,32 @@ describe("kata-registry integrity — effect walk", () => {
     },
   );
 
-  it.each(WALKED.filter((w) => w.effect.formula).map((w) => [`${w.kataName} / ${w.bucket} / ${w.effect.type}`, w] as const))(
-    "%s: formula.source is a known FORMULA_SOURCE",
+  const FORMULA_FIELDS = ["formula", "difficulty", "severity", "increasesPrior"];
+  it.each(
+    WALKED.filter((w) => FORMULA_FIELDS.some((f) => typeof w.effect[f] === "object")).map(
+      (w) => [`${w.kataName} / ${w.bucket} / ${w.effect.type}`, w] as const,
+    ),
+  )("%s: every formula's source is a known FORMULA_SOURCE", (_label, w) => {
+    for (const field of FORMULA_FIELDS) {
+      if (typeof w.effect[field] === "object") expect(FORMULA_SOURCES).toContain(w.effect[field].source);
+    }
+  });
+
+  it.each(WALKED.filter((w) => w.effect.ringDifficulty).map((w) => [`${w.kataName} / ${w.bucket} / ${w.effect.type}`, w] as const))(
+    "%s: ringDifficulty keys are rings with numeric offsets",
     (_label, w) => {
-      expect(FORMULA_SOURCES).toContain(w.effect.formula.source);
+      for (const [ring, delta] of Object.entries(w.effect.ringDifficulty)) {
+        expect(["air", "earth", "fire", "water", "void"]).toContain(ring);
+        expect(typeof delta).toBe("number");
+      }
+    },
+  );
+
+  it.each(WALKED.filter((w) => w.effect.failureNote).map((w) => [w.kataName, w] as const))(
+    "%s: failureNote has en+es i18n keys",
+    (_label, w) => {
+      expect(EN).toHaveProperty(w.effect.failureNote);
+      expect(ES).toHaveProperty(w.effect.failureNote);
     },
   );
 
@@ -183,10 +216,22 @@ describe("kata-registry integrity — cross-registry invariants", () => {
     expect(duplicates).toEqual([]);
   });
 
-  it("passive costMin <= costMax on every onOpportunity entry that has both", () => {
+  it("every i18n key a kata references (cardNote, informationalNote, spendKey, hint) exists in en+es", () => {
+    const keys = ALL_KATAS.flatMap((k) => [
+      k.cardNote,
+      k.informationalNote,
+      ...(k.onOpportunity ?? []).flatMap((o: AnyKata) => [o.spendKey, o.hint]),
+    ]).filter(Boolean);
+    for (const key of keys) {
+      expect(EN, `missing en.json key ${key}`).toHaveProperty(key);
+      expect(ES, `missing es.json key ${key}`).toHaveProperty(key);
+    }
+  });
+
+  it("passive costMin <= costMax on every onOpportunity entry that has both (numeric)", () => {
     for (const kata of PASSIVE_KATAS) {
       for (const opp of kata.onOpportunity ?? []) {
-        if (opp.costMin !== undefined && opp.costMax !== undefined) {
+        if (typeof opp.costMin === "number" && typeof opp.costMax === "number") {
           expect(
             opp.costMin,
             `${kata.names[0]}: costMin (${opp.costMin}) must be <= costMax (${opp.costMax})`,
