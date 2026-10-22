@@ -33,6 +33,7 @@ import { KATA_REGISTRY, SKILL_CATEGORY_MAP } from "./kata-registry";
 import {
   applyKataTokenAura,
   removeKataTokenAura,
+  removeKihoActiveEffect,
   clearAllKataTokenAuras,
   applyResistanceActiveEffect,
   removeResistanceActiveEffects,
@@ -777,6 +778,7 @@ export async function clearKataEffectsFor(actor, { keepKiho = false } = {}) {
     await actor.unsetFlag(MODULE_ID, "activeKiho");
     if (actor.getFlag(MODULE_ID, "kihoMark")) await actor.unsetFlag(MODULE_ID, "kihoMark");
     await removeKataTokenAura(actor);
+    await removeKihoActiveEffect(actor);
   }
 
   if (effects.length === 0) return;

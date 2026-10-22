@@ -4,16 +4,17 @@
  * enhancement becomes active — one per character, replacing any other, and
  * a kihō can't be reactivated while its enhancement is active — and its
  * burst effect resolves by bonus successes. The enhancement ends with the
- * card's "End kihō" button, another kihō, or combat end (clearAllKataEffects).
+ * card's "End kihō" button, another kihō, combat end (clearAllKataEffects)
+ * or deleting its "☯ Kihō" Active Effect by hand.
  */
 import { MODULE_ID } from "../core/module-constants";
-import { onRenderChatMessage } from "../core/compat-utils";
+import { isResponsibleClient, onRenderChatMessage } from "../core/compat-utils";
 import { actorRef, resolveActor } from "../core/actor-refs";
 import { runAsGM, registerGmRelay, senderCanActFor } from "../core/gm-relay";
 import { activeKihoOf } from "./kiho-registry";
 import { applyEffect, resolveTargets } from "./technique-engine";
 import { renderEffectLines } from "./technique-chat";
-import { applyKataTokenAura, removeKataTokenAura } from "./token-effects";
+import { applyKataTokenAura, applyKihoActiveEffect, removeKataTokenAura, removeKihoActiveEffect } from "./token-effects";
 import { hasUseButton, registerKihoReactions } from "./kiho-reactions";
 
 export { activeKihoOf };
@@ -28,12 +29,27 @@ export function burstTiersFor(kiho, bonus) {
   return selected;
 }
 
-async function endActiveKiho(actor) {
+/**
+ * Ends the actor's kihō. The flag goes first, so the deleteActiveEffect hook
+ * fired by removing the "☯ Kihō" effect finds nothing left to end.
+ */
+async function endActiveKiho(actor, { keepEffect = false } = {}) {
   if (!actor.getFlag(MODULE_ID, "activeKiho")) return;
   await actor.unsetFlag(MODULE_ID, "activeKiho");
   // A mark left by the kihō's burst (The Body Is an Anvil) ends with it.
   if (actor.getFlag(MODULE_ID, "kihoMark")) await actor.unsetFlag(MODULE_ID, "kihoMark");
   await removeKataTokenAura(actor);
+  if (!keepEffect) await removeKihoActiveEffect(actor);
+}
+
+function postKihoEnded(actor, kiho) {
+  return ChatMessage.create({
+    content: `<div class="l5r5e-combat-helper kiho-end"><p>☯ ${game.i18n.format("l5r5e-combat-helper.kiho.chat.ended", {
+      name: actor.name,
+      kiho,
+    })}</p></div>`,
+    speaker: ChatMessage.getSpeaker({ actor }),
+  });
 }
 
 function card(kiho, actor, body, extra = "") {
@@ -70,12 +86,16 @@ export async function executeKiho(kiho, ctx) {
 
   // Only one enhancement at a time: the new kihō replaces the active one.
   await endActiveKiho(actor);
+  // The ring it was activated with: its fixed ring, else the roll's ring.
+  const ring = kiho.activation.ring ?? ctx.l5rData?.stance ?? null;
+  const effectId = await applyKihoActiveEffect(actor, kiho, ring);
   await actor.setFlag(MODULE_ID, "activeKiho", {
     name,
-    ring: kiho.activation.ring ?? null,
+    ring,
+    effectId,
     combatId: game.combat?.id ?? null,
   });
-  await applyKataTokenAura(actor, kiho.activation.ring ?? ctx.l5rData?.stance, "kiho");
+  await applyKataTokenAura(actor, ring, "kiho");
 
   const bonus = Math.max(0, ctx.totalSuccess - ctx.tn);
   ctx.extraSuccesses = bonus;
@@ -95,6 +115,7 @@ export async function executeKiho(kiho, ctx) {
     kiho,
     actor,
     `<p>${i18n.format("l5r5e-combat-helper.kiho.chat.activated", { name: actor.name })}</p>${rollLine(bonus)}
+     ${ring ? `<p>${i18n.format("l5r5e-combat-helper.kiho.chat.ring", { ring: i18n.localize(`l5r5e-combat-helper.rings.${ring}`) })}</p>` : ""}
      <p><strong>${i18n.localize("l5r5e-combat-helper.kiho.chat.enhancement")}</strong></p>${note}
      ${lines ? `<p><strong>${i18n.localize("l5r5e-combat-helper.kiho.chat.burst")}</strong></p><div class="kata-effects">${lines}</div>` : ""}
      ${cardNote}`,
@@ -112,6 +133,19 @@ export async function executeKiho(kiho, ctx) {
 export function registerKihoHandlers() {
   registerGmRelay({ endKiho });
   registerKihoReactions();
+
+  // Deleting the "☯ Kihō" effect by hand (sheet, token HUD) ends the kihō.
+  // Only the current effect counts: a replaced kihō's effect is deleted
+  // after the new one is stored.
+  Hooks.on("deleteActiveEffect", async (effect, _options, userId) => {
+    if (!isResponsibleClient({ author: userId })) return;
+    if (!effect.getFlag?.(MODULE_ID, "kihoActiveEffect")) return;
+    const actor = effect.parent;
+    const active = actor?.getFlag?.(MODULE_ID, "activeKiho");
+    if (!active || active.effectId !== effect.id) return;
+    await endActiveKiho(actor, { keepEffect: true });
+    await postKihoEnded(actor, active.name);
+  });
 
   onRenderChatMessage((message, el) => {
     el.querySelectorAll(".kiho-end-button").forEach((btn) => {
@@ -139,11 +173,5 @@ export async function endKiho({ actorId, name }, senderId) {
   if (!actor || !senderCanActFor(senderId, actor)) return;
   if (actor.getFlag(MODULE_ID, "activeKiho")?.name !== name) return;
   await endActiveKiho(actor);
-  await ChatMessage.create({
-    content: `<div class="l5r5e-combat-helper kiho-end"><p>☯ ${game.i18n.format("l5r5e-combat-helper.kiho.chat.ended", {
-      name: actor.name,
-      kiho: name,
-    })}</p></div>`,
-    speaker: ChatMessage.getSpeaker({ actor }),
-  });
+  await postKihoEnded(actor, name);
 }
