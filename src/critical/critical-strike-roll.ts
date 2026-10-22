@@ -11,6 +11,7 @@
  * - Launch the L5R5e roll system for Fitness check
  * - Prepare the roll with appropriate parameters
  */
+import { openDicePicker } from "../core/dice-picker";
 import { resolveActor } from "../core/actor-refs";
 import { onRenderChatMessage } from "../core/compat-utils";
 
@@ -177,7 +178,7 @@ async function launchFitnessCheck(target, weaponDeadliness, messageId, originRol
       ? { actor: target, skillId: "martial", difficulty, difficultyHidden: false }
       : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty, difficultyHidden: false };
 
-    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
+    openDicePicker(dialogParams, ringDifficulty);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching Fitness check:",

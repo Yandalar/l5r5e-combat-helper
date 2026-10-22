@@ -92,4 +92,15 @@ describe("system contract — real l5r5e system install", () => {
       ).toEqual([]);
     },
   );
+
+  it.skipIf(!SYSTEM_EXISTS)(
+    "DicePickerDialog still exposes the ringId / difficulty setters core/dice-picker.ts relies on",
+    () => {
+      const source = readFileSync(join(SYSTEM_PATH, "scripts/dice/dice-picker-dialog.js"), "utf-8");
+      expect(source).toContain("set ringId(");
+      expect(source).toContain("set difficulty(");
+      // The ring click goes through the setter, so the TN can follow it.
+      expect(source).toMatch(/this\.ringId\s*=\s*event\.target\.dataset\.ringid/);
+    },
+  );
 });
