@@ -2,6 +2,7 @@
 import { actorRef } from "../core/actor-refs";
 import { isEarthStanceProtected } from "../stances/stance-effects";
 import { getWeaponDeadliness } from "../core/weapon-utils";
+import { kihoReactionButtons } from "../techniques/kiho-reactions";
 /**
  * Chat message generation helpers.
  *
@@ -142,6 +143,7 @@ export async function createDamageMessage(
       <p>${fatigueText}</p>
       ${incapacitatedMessage}
       ${opportunityButton}
+      ${kihoReactionButtons(attackData?.kihoReactions)}
     </div>
   `;
 
@@ -151,6 +153,7 @@ export async function createDamageMessage(
     flags: {
       "l5r5e-combat-helper": {
         attackData,
+        ...(attackData?.kihoReactions ? { kihoReactions: attackData.kihoReactions } : {}),
       },
     },
     ownership: getCombatOwnership(attacker, target),
@@ -171,6 +174,7 @@ export async function createDamageMessage(
  * @param {number} rawDamage - Damage before armor mitigation
  * @param {number} armorResistance - Armor resistance applied
  * @param {number} fireBonus - Additional damage from Fire stance strife bonus (default 0)
+ * @param {object|null} kihoReactions - Kihō reaction buttons (Grasp the Earth Dragon), see kiho-reactions.ts
  * @returns {Promise<void>}
  */
 export async function createArmorBlockedMessage(
@@ -179,6 +183,7 @@ export async function createArmorBlockedMessage(
   rawDamage,
   armorResistance,
   fireBonus = 0,
+  kihoReactions = null,
 ) {
   const i18n = game.i18n;
 
@@ -208,12 +213,16 @@ export async function createArmorBlockedMessage(
       <p>${attacks}</p>
       <p>${calculation}</p>
       <p><em>${absorbed}</em></p>
+      ${kihoReactionButtons(kihoReactions)}
     </div>
   `;
 
   await ChatMessage.create({
     content: content,
     speaker: ChatMessage.getSpeaker({ actor: attacker }),
+    ...(kihoReactions
+      ? { flags: { "l5r5e-combat-helper": { kihoReactions } }, ownership: getCombatOwnership(attacker, target) }
+      : {}),
   });
 }
 

@@ -14,6 +14,7 @@ import { activeKihoOf } from "./kiho-registry";
 import { applyEffect, resolveTargets } from "./technique-engine";
 import { renderEffectLines } from "./technique-chat";
 import { applyKataTokenAura, removeKataTokenAura } from "./token-effects";
+import { hasUseButton, registerKihoReactions } from "./kiho-reactions";
 
 export { activeKihoOf };
 
@@ -97,7 +98,12 @@ export async function executeKiho(kiho, ctx) {
      <p><strong>${i18n.localize("l5r5e-combat-helper.kiho.chat.enhancement")}</strong></p>${note}
      ${lines ? `<p><strong>${i18n.localize("l5r5e-combat-helper.kiho.chat.burst")}</strong></p><div class="kata-effects">${lines}</div>` : ""}
      ${cardNote}`,
-    `<button class="kiho-end-button" data-actor-id="${actorRef(actor)}" data-kiho="${name}">
+    `${hasUseButton(kiho)
+      ? `<button class="kiho-use-button" data-actor-id="${actorRef(actor)}" data-kiho="${name}">
+      ${i18n.localize("l5r5e-combat-helper.kiho.use.button")}
+    </button>`
+      : ""}
+    <button class="kiho-end-button" data-actor-id="${actorRef(actor)}" data-kiho="${name}">
       ${i18n.localize("l5r5e-combat-helper.kiho.chat.end")}
     </button>`,
   );
@@ -105,6 +111,7 @@ export async function executeKiho(kiho, ctx) {
 
 export function registerKihoHandlers() {
   registerGmRelay({ endKiho });
+  registerKihoReactions();
 
   onRenderChatMessage((message, el) => {
     el.querySelectorAll(".kiho-end-button").forEach((btn) => {

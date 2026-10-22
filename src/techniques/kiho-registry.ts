@@ -339,7 +339,7 @@ export const KIHO_REGISTRY = [
   },
   {
     // Libro Básico p. 186. Enhancement: −Earth Ring critical severity (critical-mitigation.ts);
-    // the Void spend against the attacker is ticket K3.
+    // the Void spend against the attacker is a damage-card button (kiho-reactions.ts).
     names: ["Grasp the Earth Dragon", "El abrazo del dragón de Tierra"],
     compendiumIds: ["Compendium.l5r5e.core-techniques-kiho.Item.L5RCoreKih000002"],
     activation: { skill: "meditation", ring: "earth", difficulty: 2 },
