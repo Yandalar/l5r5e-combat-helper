@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+import { openDicePicker } from "../core/dice-picker";
 import { KATA_REGISTRY, PASSIVE_KATA_REGISTRY, kataMatchesItem } from "./kata-registry";
 import {
   executeKata,
@@ -387,7 +388,9 @@ async function handleResistanceRollButtonClick(button) {
 
   try {
     const dialogParams = buildResistanceDialogParams(target, skill, skillCatId, difficulty);
-    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
+    // "TN 4 (Earth 5, Fire 2)": the dialog's TN follows the ring the target picks.
+    const ringDifficulty = target.getFlag("l5r5e-combat-helper", "pendingResistanceRoll")?.ringDifficulty ?? null;
+    openDicePicker(dialogParams, ringDifficulty);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching resistance roll:",

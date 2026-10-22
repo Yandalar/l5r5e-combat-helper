@@ -19,6 +19,7 @@
  *    mark the session flag as used, and launch a new mitigation roll.
  */
 
+import { openDicePicker } from "../core/dice-picker";
 import { resolveActor } from "../core/actor-refs";
 import { reverseCriticalEffect } from "../critical/critical-effects-application";
 import { confirmDialog, resolveMessageId, contextMenuEntry } from "../core/compat-utils";
@@ -304,7 +305,7 @@ async function launchNewMitigationRoll(
     : { actor: target, skillId: "fitness", skillCatId: "martial", difficulty, difficultyHidden: false };
 
   try {
-    new game.l5r5e.DicePickerDialog(dialogParams).render(true);
+    openDicePicker(dialogParams, ringDifficulty);
   } catch (error) {
     console.error(
       "L5R5e Combat Helper | Error launching Shattering Parry reroll:",

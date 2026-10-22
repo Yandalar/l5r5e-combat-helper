@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
   - Warrior's Resolve: send the technique to chat from the sheet and press "Use" to spend a Void point and remove fatigue (once per combat).
   - Parts a kata can't automate (disarming, readying a sheathed weapon, moving, unchecked weapon properties) are shown as reminders on its card.
 - Resistance rolls with ring-dependent TNs ("TN 3 (Earth 4, Fire 1)"); the TN is computed from the ring the target rolls with.
+- The dice picker the module opens for resistance, critical mitigation and Shattering Parry rolls updates its TN when the ring changes, so the system's success line matches the module.
 - Katas can trigger critical strikes with their own severity and, for Heartpiercing Strike, their own Fitness TN, through the usual critical strike card.
 - Opportunity result cards list what each effect did.
 
