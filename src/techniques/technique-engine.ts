@@ -533,6 +533,49 @@ async function applyClearTechniqueEffects(effect, ctx, targets) {
 }
 
 /**
+ * Stores a timed defensive flag on the targets and records its expiry
+ * (`flagKey` is unset by the expiry loops and by clearKataEffectsFor).
+ */
+async function setTimedFlag(target, ctx, flagKey, value, duration) {
+  await target.setFlag(MODULE_ID, flagKey, value);
+  const expiryField = DURATION_EXPIRY[duration];
+  if (expiryField) {
+    await storeActiveKataEffect(target, { type: flagKey, flagKey, [expiryField]: ctx.attacker.id });
+  }
+}
+
+/** +N to the TN of Attack checks targeting the actor (Way of the Willow burst); read by combat-handler. */
+async function applyIncomingAttackTnEffect(effect, ctx, targets) {
+  const amount = resolveFormula(effect.amount ?? { source: "fixed", value: 1 }, ctx, null);
+  for (const target of targets) {
+    await setTimedFlag(target, ctx, "incomingAttackTnBonus", { amount }, effect.duration ?? "until_next_turn");
+  }
+  return { type: "incoming_attack_tn", amount, targets: targets.map((t) => t.name) };
+}
+
+/**
+ * Caps the physical damage the actor suffers from attacks; with
+ * `proneSource`, whoever deals it becomes Prone (Grasp the Earth Dragon burst).
+ */
+async function applyDamageCapEffect(effect, ctx, targets) {
+  const cap = effect.cap ?? 1;
+  for (const target of targets) {
+    await setTimedFlag(
+      target, ctx, "kihoDamageCap", { cap, proneSource: Boolean(effect.proneSource) }, effect.duration ?? "until_end_of_next_turn",
+    );
+  }
+  return { type: "damage_cap", cap, targets: targets.map((t) => t.name) };
+}
+
+/** Marks the targets as the user's chosen opponent for `key` until the kihō ends (The Body Is an Anvil burst). */
+async function applyMarkTargetEffect(effect, ctx, targets) {
+  const target = targets[0];
+  if (!target) return null;
+  await ctx.attacker.setFlag(MODULE_ID, "kihoMark", { key: effect.key, targetId: actorRef(target) });
+  return { type: "mark_target", key: effect.key, targets: [target.name] };
+}
+
+/**
  * Unified dispatcher. `resistance_buff`, `critical_severity_boost` and
  * `condition_lock` used to exist ONLY inside applyPassiveKataOpportunity's
  * own if/else chain — they are now real handlers here too, so EFFECT_TYPES
@@ -553,6 +596,9 @@ export const EFFECT_HANDLERS = {
   gain_void: applyGainVoidEffect,
   choice: applyChoiceEffect,
   clear_technique_effects: applyClearTechniqueEffects,
+  incoming_attack_tn: applyIncomingAttackTnEffect,
+  damage_cap: applyDamageCapEffect,
+  mark_target: applyMarkTargetEffect,
 };
 export const EFFECT_TYPES = Object.keys(EFFECT_HANDLERS);
 
@@ -571,6 +617,9 @@ export const EFFECT_BUCKETS = {
   gain_void: ["onSuccess", "onOpportunity", "burst", "choice"],
   choice: ["onSuccess", "onOpportunity", "burst"],
   clear_technique_effects: ["onSuccess", "burst"],
+  incoming_attack_tn: ["onSuccess", "onOpportunity", "burst"],
+  damage_cap: ["onSuccess", "burst"],
+  mark_target: ["burst"],
 };
 
 export const DURATION_EXPIRY = {
@@ -641,6 +690,7 @@ export async function processExpiredKataEffects(combatantActorId) {
         await actor.unsetFlag(MODULE_ID, "pendingTnReduction");
         await removeTnReductionActiveEffect(actor);
       }
+      if (effect.flagKey) await actor.unsetFlag(MODULE_ID, effect.flagKey);
     }
 
     const remaining = effects.filter((e) => e[expiryField] !== combatantActorId);
@@ -670,6 +720,7 @@ export async function processEndOfTurnKataEffects(combatantActorId) {
       if (effect.type === "condition_lock") {
         await removeConditionLockActiveEffects(actor);
       }
+      if (effect.flagKey) await actor.unsetFlag(MODULE_ID, effect.flagKey);
     }
 
     const remaining = effects.filter((e) => e[expiryField] !== combatantActorId);
@@ -704,8 +755,12 @@ export async function clearKataEffectsFor(actor, { keepKiho = false } = {}) {
     await actor.unsetFlag(MODULE_ID, "pendingCriticalSeverityBoost");
     await removeCriticalSeverityBoostActiveEffect(actor);
   }
+  for (const flagKey of ["incomingAttackTnBonus", "kihoDamageCap"]) {
+    if (actor.getFlag(MODULE_ID, flagKey)) await actor.unsetFlag(MODULE_ID, flagKey);
+  }
   if (!keepKiho && actor.getFlag(MODULE_ID, "activeKiho")) {
     await actor.unsetFlag(MODULE_ID, "activeKiho");
+    if (actor.getFlag(MODULE_ID, "kihoMark")) await actor.unsetFlag(MODULE_ID, "kihoMark");
     await removeKataTokenAura(actor);
   }
 

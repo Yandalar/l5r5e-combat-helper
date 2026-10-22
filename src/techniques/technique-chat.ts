@@ -92,6 +92,12 @@ export const EFFECT_SUMMARY_RENDERERS = {
     game.i18n.format("l5r5e-combat-helper.kata.chat.choicePending", { targets: e.targets.join(", ") }),
   clear_technique_effects: (e) =>
     game.i18n.format("l5r5e-combat-helper.kata.chat.techniqueEffectsCleared", { targets: e.targets.join(", ") }),
+  incoming_attack_tn: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kiho.chat.incomingTn", { amount: e.amount, targets: e.targets.join(", ") }),
+  damage_cap: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kiho.chat.damageCap", { cap: e.cap, targets: e.targets.join(", ") }),
+  mark_target: (e) =>
+    game.i18n.format("l5r5e-combat-helper.kiho.chat.marked", { targets: e.targets.join(", ") }),
 };
 
 /** Localized ring name ("earth" → "Tierra"). */
