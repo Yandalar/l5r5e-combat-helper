@@ -16,7 +16,11 @@ All notable changes to this project will be documented in this file.
     - Earth Needs No Eyes raises Vigilance for the module's TNs.
     - The bursts of Way of the Willow, Grasp the Earth Dragon and The Body Is an Anvil are applied too.
     - Damage cards list each kihō modifier.
-  - The other enhancements are described on the card and applied by hand.
+  - **Enhancements with buttons and choices:**
+    - Way of the Earthquake and Ki Protection: a "Use enhancement" button on the kihō card acts on the targeted tokens (a Fitness resistance, or spending 1 Void point to remove fatigue).
+    - Death Touch and Grasp the Earth Dragon: the damage card offers the attacked character a button to spend 1 Void point (defend against the damage, or make the attacker suffer fatigue).
+    - Freezing the Lifeblood and Breaking Blow: after an unarmed hit, choice cards for the target (Immobilized or 3 fatigue; the attacker picks a weapon or armor, then Damaged or 2 fatigue).
+  - The remaining parts of the enhancements are described on the card and applied by hand.
 - Choice cards: a technique can let the attacker or the target pick an option, and the GM's client applies it.
 
 - **16 more katas from the Core Rulebook**:

@@ -45,6 +45,7 @@ import {
   anvilRetaliation,
   criticalSeverityFor,
 } from "./techniques/kiho-enhancements";
+import { kihoReactionsFor, kihoHitChoices } from "./techniques/kiho-reactions";
 import { applyDamagedQualityToWeapon } from "./reactions/shattering-parry";
 import { isResponsibleClient } from "./core/compat-utils";
 
@@ -206,6 +207,11 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     kihoNotes,
     critSeverity: criticalSeverityFor(atk, getWeaponDeadliness(equippedWeapon)),
     critSharp: atk.sharp,
+    // Buttons for Void-spending kihō reactions (Death Touch defense, Grasp the Earth Dragon).
+    kihoReactions: kihoReactionsFor(attacker, target, l5rData, {
+      ignoredResistance: resistance - armorResistance,
+      finalDamage,
+    }),
     timestamp: Date.now(),
     resolved: false,
     rollMessageId: rollMessage.id,
@@ -222,6 +228,9 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     attackData,
     fireBonus,
   );
+
+  // Freezing the Lifeblood and Breaking Blow: choice cards after the hit.
+  await kihoHitChoices(attacker, target, l5rData, armorResistance);
 }
 
 /**
@@ -301,6 +310,7 @@ async function applyDamage(
       rawDamage,
       armorResistance,
       fireBonus,
+      attackData?.kihoReactions ?? null,
     );
 
     return;

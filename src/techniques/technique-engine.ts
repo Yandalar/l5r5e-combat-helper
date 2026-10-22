@@ -44,6 +44,7 @@ import {
   removeConditionLockActiveEffects,
 } from "./token-effects";
 import { actorRef, kataEffectActors } from "../core/actor-refs";
+import { applyDamagedQualityToWeapon } from "../reactions/shattering-parry";
 
 /**
  * @typedef {{
@@ -524,6 +525,18 @@ async function applyChoiceEffect(effect, ctx, targets) {
   return pending.length ? { type: "choice", targets: pending } : null;
 }
 
+/** One of the target's items becomes Damaged (Breaking Blow). */
+async function applyDamageItemEffect(effect, ctx, targets) {
+  const results = [];
+  for (const target of targets) {
+    const item = target.items?.get?.(effect.itemId);
+    if (!item) continue;
+    await applyDamagedQualityToWeapon(item, target);
+    results.push({ target: target.name, item: item.name });
+  }
+  return results.length ? { type: "damage_item", results } : null;
+}
+
 /** Ends the kata/kihō effects the module tracks on the targets (Ride the Water Dragon). */
 async function applyClearTechniqueEffects(effect, ctx, targets) {
   for (const target of targets) {
@@ -599,6 +612,7 @@ export const EFFECT_HANDLERS = {
   incoming_attack_tn: applyIncomingAttackTnEffect,
   damage_cap: applyDamageCapEffect,
   mark_target: applyMarkTargetEffect,
+  damage_item: applyDamageItemEffect,
 };
 export const EFFECT_TYPES = Object.keys(EFFECT_HANDLERS);
 
@@ -620,6 +634,7 @@ export const EFFECT_BUCKETS = {
   incoming_attack_tn: ["onSuccess", "onOpportunity", "burst"],
   damage_cap: ["onSuccess", "burst"],
   mark_target: ["burst"],
+  damage_item: ["choice"],
 };
 
 export const DURATION_EXPIRY = {

@@ -98,6 +98,10 @@ export const EFFECT_SUMMARY_RENDERERS = {
     game.i18n.format("l5r5e-combat-helper.kiho.chat.damageCap", { cap: e.cap, targets: e.targets.join(", ") }),
   mark_target: (e) =>
     game.i18n.format("l5r5e-combat-helper.kiho.chat.marked", { targets: e.targets.join(", ") }),
+  damage_item: (e) =>
+    e.results
+      .map((r) => game.i18n.format("l5r5e-combat-helper.kiho.chat.itemDamaged", { target: r.target, item: r.item }))
+      .join("<br>"),
 };
 
 /** Localized ring name ("earth" → "Tierra"). */

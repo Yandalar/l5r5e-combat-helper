@@ -279,7 +279,8 @@ describe("kata-registry integrity — cross-registry invariants", () => {
    * as each phase lands, the corresponding entry below should be removed. An
    * entry with no comment explaining *why* it's still unused is a smell.
    */
-  const KNOWN_UNUSED_EFFECT_TYPES: string[] = [];
+  // damage_item: built by kiho-reactions.ts (Breaking Blow's choice cards), not by a registry entry.
+  const KNOWN_UNUSED_EFFECT_TYPES: string[] = ["damage_item"];
 
   it("every EFFECT_TYPE is used by the registry or explicitly listed as known-unused", () => {
     const usedTypes = new Set(WALKED.map((w) => w.effect.type));
