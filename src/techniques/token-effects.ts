@@ -113,6 +113,36 @@ const RING_ICONS = {
   void: "icons/magic/void/spiral-vortex-purple.webp",
 };
 
+/**
+ * Creates the "☯ Kihō: <name>" Active Effect that shows the actor's active
+ * kihō, with the icon of the ring it was activated with. Cosmetic only;
+ * deleting it by hand ends the kihō (kiho-engine's deleteActiveEffect hook).
+ * Returns the effect id.
+ */
+export async function applyKihoActiveEffect(actor, kiho, ring) {
+  const name = kiho.names[0];
+  const created = await actor.createEmbeddedDocuments("ActiveEffect", [
+    {
+      name: `☯ ${game.i18n.format("l5r5e-combat-helper.kiho.effect.active", { name })}`,
+      img: RING_ICONS[ring] ?? "icons/svg/aura.svg",
+      description: kiho.enhancement?.note ? game.i18n.localize(kiho.enhancement.note) : "",
+      changes: [],
+      // Without a duration, v14 only shows the icon on the token with ALWAYS.
+      showIcon: globalThis.CONST?.ACTIVE_EFFECT_SHOW_ICON?.ALWAYS ?? 2,
+      flags: { "l5r5e-combat-helper": { kihoActiveEffect: true, kiho: name } },
+    },
+  ]);
+  return created[0]?.id ?? null;
+}
+
+/** Removes the actor's "☯ Kihō" Active Effects. */
+export async function removeKihoActiveEffect(actor) {
+  const ids = (actor.effects ?? [])
+    .filter((e) => e.getFlag?.("l5r5e-combat-helper", "kihoActiveEffect"))
+    .map((e) => e.id);
+  if (ids.length > 0) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
+}
+
 const BUFF_EFFECT_FLAG = "resistanceActiveEffectIds";
 
 /**

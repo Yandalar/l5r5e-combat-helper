@@ -286,6 +286,8 @@
   "l5r5e-combat-helper.kiho.chat.burst": "Burst effect:",
   "l5r5e-combat-helper.kiho.chat.end": "☯ End kihō",
   "l5r5e-combat-helper.kiho.chat.ended": "{name} ends {kiho}.",
+  "l5r5e-combat-helper.kiho.chat.ring": "Active with {ring}",
+  "l5r5e-combat-helper.kiho.effect.active": "Kihō: {name}",
   "l5r5e-combat-helper.kata.chat.voidGained": "✨ {target} gains {amount} Void point(s)",
   "l5r5e-combat-helper.kata.chat.choicePending": "⚖️ Pending choice: {targets}",
   "l5r5e-combat-helper.kata.chat.choicePrompt": "<strong>{chooser}</strong> chooses (target: {target}):",
