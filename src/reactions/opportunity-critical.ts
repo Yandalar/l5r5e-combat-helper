@@ -147,7 +147,11 @@ async function handleOpportunityCriticalClick(message, button) {
       opportunityCriticalUsed: true,
     });
 
-    await createCriticalStrikeMessage(target, attacker, weapon, null, "opportunity");
+    // An unarmed attack under a kihō (Flame Fist, Edgeless Sword) has its own severity.
+    await createCriticalStrikeMessage(target, attacker, weapon, null, "opportunity", {
+      severity: attackData.critSeverity ?? undefined,
+      sharp: Boolean(attackData.critSharp),
+    });
 
     button.textContent = game.i18n.localize(
       "l5r5e-combat-helper.chat.opportunityCritical.usedButton",

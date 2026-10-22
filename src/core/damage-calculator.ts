@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { activeKihoOf } from "../techniques/kiho-registry";
 import { resolveAttackWeapon, getWeaponBaseDamage } from "./weapon-utils";
 
 /**
@@ -124,6 +125,9 @@ export function getArmorResistance(target, type = "physical") {
       ? target.getFlag("l5r5e-combat-helper", "resistanceBuff") || 0
       : 0;
 
+  // Earthen Fist (kihō): +1 physical resistance while active.
+  const kihoBonus = activeKihoOf(target)?.enhancement?.id === "earthenFist" ? 1 : 0;
+
   // A negative buff (Striking as Water) lowers armor, never below 0
-  return Math.max(0, resistance + kataResistanceBuff);
+  return Math.max(0, resistance + kataResistanceBuff + kihoBonus);
 }

@@ -19,6 +19,7 @@
 import { actorRef, resolveActor, rollActor, speakerActor } from "../core/actor-refs";
 import { applyCriticalEffect } from "./critical-effects-application";
 import { isWeaponSharp } from "./critical-effects-table";
+import { criticalSeverityReduction } from "../techniques/kiho-enhancements";
 import { isResponsibleClient } from "../core/compat-utils";
 
 /**
@@ -128,7 +129,9 @@ async function processCriticalMitigation(
     await removeCriticalSeverityBoostActiveEffect(actor);
   }
 
-  const finalSeverity = Math.max(1, weaponDeadliness + severityBoost - severityReduction);
+  // Grasp the Earth Dragon (kihō): −Earth Ring to criticals the actor suffers.
+  const kihoReduction = criticalSeverityReduction(actor);
+  const finalSeverity = Math.max(1, weaponDeadliness + severityBoost - severityReduction - kihoReduction);
 
   const ringUsed = l5rData.stance || "void";
 
@@ -141,6 +144,7 @@ async function processCriticalMitigation(
     severityBoost,
     finalSeverity,
     l5rData,
+    kihoReduction,
   );
 
   const criticalMessage = game.messages.get(criticalMessageId);
@@ -161,6 +165,10 @@ async function processCriticalMitigation(
 
       if (criticalData.weaponId) {
         weapon = attacker?.items.get(criticalData.weaponId);
+      }
+      // Way of the Edgeless Sword: the unarmed strike counts as Razor-Edged.
+      if (criticalData.sharp && !isWeaponSharp(weapon)) {
+        weapon = { id: weapon?.id ?? null, name: weapon?.name, system: { properties: [{ id: "L5RCorePro000001", name: "Razor-Edged" }] } };
       }
 
       // Mark the critical strike as resolved
@@ -277,6 +285,7 @@ async function updateCriticalMessageButton(message) {
  * @param {number} severityReduction The total amount by which the severity was reduced.
  * @param {number} finalSeverity The final calculated severity after mitigation.
  * @param {Object} l5rData Raw roll metadata from the L5R5e system.
+ * @param {number} [kihoReduction] Severity removed by the actor's kihō (Grasp the Earth Dragon).
  * @returns {Promise<void>}
  */
 async function createMitigationResultMessage(
@@ -288,6 +297,7 @@ async function createMitigationResultMessage(
   severityBoost,
   finalSeverity,
   l5rData,
+  kihoReduction = 0,
 ) {
   const i18n = game.i18n;
   const ringUsed = l5rData.stance || "unknown";
@@ -371,6 +381,7 @@ async function createMitigationResultMessage(
       <div class="severity-calculation">
         <p>${baseSeverityText}</p>
         ${severityBoostLine}
+        ${kihoReduction > 0 ? `<p>☯ ${i18n.format("l5r5e-combat-helper.kiho.combat.severityReduced", { amount: kihoReduction })}</p>` : ""}
         <p>${mitigationAmount}</p>
         <hr>
         <p>${finalSeverityText}</p>

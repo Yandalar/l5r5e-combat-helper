@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { activeKihoOf } from "../techniques/kiho-registry";
+
 /**
  * Actor Data Utilities
  *
@@ -295,8 +297,14 @@ export function getHonorRank(actor) {
 
 export function getVigilance(actor) {
   if (!actor) return 0;
-  if (actor.system?.vigilance?.value !== undefined) return parseInt(actor.system.vigilance.value) || 0;
-  return parseInt(actor.system?.vigilance) || 0;
+  const base = actor.system?.vigilance?.value !== undefined
+    ? parseInt(actor.system.vigilance.value) || 0
+    : parseInt(actor.system?.vigilance) || 0;
+  // Earth Needs No Eyes (kihō): +Earth Ring Vigilance while active (module-side only).
+  const kihoBonus = activeKihoOf(actor)?.enhancement?.id === "earthNeedsNoEyes"
+    ? parseInt(actor.system?.rings?.earth) || 0
+    : 0;
+  return base + kihoBonus;
 }
 
 /**

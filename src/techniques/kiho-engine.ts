@@ -10,17 +10,12 @@ import { MODULE_ID } from "../core/module-constants";
 import { onRenderChatMessage } from "../core/compat-utils";
 import { actorRef, resolveActor } from "../core/actor-refs";
 import { runAsGM, registerGmRelay, senderCanActFor } from "../core/gm-relay";
-import { KIHO_REGISTRY } from "./kiho-registry";
+import { activeKihoOf } from "./kiho-registry";
 import { applyEffect, resolveTargets } from "./technique-engine";
 import { renderEffectLines } from "./technique-chat";
 import { applyKataTokenAura, removeKataTokenAura } from "./token-effects";
 
-/** The registry entry of the actor's active kihō, or null. */
-export function activeKihoOf(actor) {
-  const active = actor?.getFlag?.(MODULE_ID, "activeKiho");
-  if (!active) return null;
-  return KIHO_REGISTRY.find((k) => k.names.includes(active.name)) ?? null;
-}
+export { activeKihoOf };
 
 /** Burst tiers met by `bonus` successes; a met tier with `replaces` drops the lower ones. */
 export function burstTiersFor(kiho, bonus) {
@@ -35,6 +30,8 @@ export function burstTiersFor(kiho, bonus) {
 async function endActiveKiho(actor) {
   if (!actor.getFlag(MODULE_ID, "activeKiho")) return;
   await actor.unsetFlag(MODULE_ID, "activeKiho");
+  // A mark left by the kihō's burst (The Body Is an Anvil) ends with it.
+  if (actor.getFlag(MODULE_ID, "kihoMark")) await actor.unsetFlag(MODULE_ID, "kihoMark");
   await removeKataTokenAura(actor);
 }
 

@@ -19,13 +19,14 @@ import {
   getCurrentFatigue,
   getEndurance,
   isAtCriticalState,
+  applyFatigue,
 } from "./core/actor-utils";
 import {
   checkAttackSuccess,
   calculateDamage,
   getArmorResistance,
 } from "./core/damage-calculator";
-import { resolveAttackWeapon } from "./core/weapon-utils";
+import { resolveAttackWeapon, getWeaponBaseDamage, getWeaponDeadliness } from "./core/weapon-utils";
 import {
   createDamageMessage,
   createArmorBlockedMessage,
@@ -37,6 +38,14 @@ import {
   getFireStrifeBonus,
 } from "./stances/stance-effects";
 import { removeTnReductionActiveEffect } from "./techniques/token-effects";
+import {
+  attackModifiers,
+  defenseModifiers,
+  incomingAttackTnBonus,
+  anvilRetaliation,
+  criticalSeverityFor,
+} from "./techniques/kiho-enhancements";
+import { applyDamagedQualityToWeapon } from "./reactions/shattering-parry";
 import { isResponsibleClient } from "./core/compat-utils";
 
 /**
@@ -126,9 +135,16 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     target.getFlag("l5r5e-combat-helper", "activeKataEffects") || [];
   const hasAssistance = activeKataEffects.some((e) => e.type === "assistance");
 
+  // Kihō enhancements: the attacker's (unarmed attacks) and the target's.
+  const atk = attackModifiers(attacker, target, l5rData);
+
   if (wasCritical) {
     const weapon = resolveAttackWeapon(l5rData, attacker);
-    await createCriticalStrikeMessage(target, attacker, weapon, rollMessage.id);
+    const severity = criticalSeverityFor(atk, getWeaponDeadliness(weapon));
+    await createCriticalStrikeMessage(target, attacker, weapon, rollMessage.id, "incapacitated", {
+      severity: severity ?? undefined,
+      sharp: atk.sharp,
+    });
     return;
   }
 
@@ -139,7 +155,8 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     await removeTnReductionActiveEffect(target);
   }
 
-  const airBonus = getAirTNBonus(target);
+  // Air stance and Way of the Willow's burst raise the TN of attacks against the target.
+  const airBonus = getAirTNBonus(target) + incomingAttackTnBonus(target);
   const success = checkAttackSuccess(l5rData, airBonus - tnReduction);
   const tnReductionDecisive =
     tnReduction > 0 && success && !checkAttackSuccess(l5rData, airBonus);
@@ -151,13 +168,26 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     return;
   }
 
-  const rawDamage = calculateDamage(l5rData, attacker);
-  const armorResistance = getArmorResistance(target);
+  const equippedWeapon = resolveAttackWeapon(l5rData, attacker);
+  const def = defenseModifiers(target, attacker, l5rData);
+
+  let rawDamage = calculateDamage(l5rData, attacker) + atk.damageBonus;
+  if (atk.baseOverride !== null) rawDamage += atk.baseOverride - getWeaponBaseDamage(equippedWeapon);
+  // The Body Is an Anvil (burst): damage from the marked opponent is reduced before defending.
+  rawDamage = Math.max(0, rawDamage - def.preArmorReduction);
+  const resistance = getArmorResistance(target, atk.damageType);
+  const armorResistance = Math.max(0, resistance - atk.armorIgnored);
   const fireBonus = getFireStrifeBonus(attacker, l5rData);
-  const finalDamage = Math.max(0, rawDamage + fireBonus - armorResistance);
+  let finalDamage = Math.max(0, rawDamage + fireBonus - armorResistance - def.damageReduction);
+  // Grasp the Earth Dragon (burst): physical damage suffered is reduced to the cap.
+  const capped = def.damageCap !== null && atk.damageType === "physical" && finalDamage > def.damageCap;
+  if (capped) finalDamage = def.damageCap;
+
+  const kihoNotes = [...atk.notes, ...def.notes];
+  if (capped) kihoNotes.push(game.i18n.format("l5r5e-combat-helper.kiho.combat.damageCapped", { cap: def.damageCap }));
+  kihoNotes.push(...(await kihoDefenseSideEffects(target, attacker, equippedWeapon, armorResistance, finalDamage, def, atk)));
 
   const opportunities = l5rData.summary?.opportunity || 0;
-  const equippedWeapon = resolveAttackWeapon(l5rData, attacker);
 
   const originalTn = (l5rData.difficulty || 2) + airBonus;
 
@@ -173,6 +203,9 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     opportunityCriticalUsed: false,
     hasAssistance,
     tnReductionApplied: tnReductionDecisive ? { amount: tnReduction, originalTn, effectiveTn: originalTn - tnReduction } : null,
+    kihoNotes,
+    critSeverity: criticalSeverityFor(atk, getWeaponDeadliness(equippedWeapon)),
+    critSharp: atk.sharp,
     timestamp: Date.now(),
     resolved: false,
     rollMessageId: rollMessage.id,
@@ -189,6 +222,41 @@ export async function processAttack(rollMessage, attacker, target, l5rData) {
     attackData,
     fireBonus,
   );
+}
+
+/**
+ * Kihō effects triggered by the target defending against this attack's damage
+ * (its resistance reduced it): The Body Is an Anvil retaliates; its burst
+ * mark damages the opponent's weapon and sets it Burning when the damage is
+ * fully stopped; Grasp the Earth Dragon's burst knocks the attacker Prone.
+ * Returns the chat lines for the damage card.
+ */
+async function kihoDefenseSideEffects(target, attacker, weapon, armorResistance, finalDamage, def, atk) {
+  const notes = [];
+  const defended = armorResistance > 0;
+
+  const anvil = anvilRetaliation(target);
+  if (anvil && defended) {
+    const damage = Math.max(0, anvil.damage - getArmorResistance(attacker, "supernatural"));
+    if (damage > 0) await applyFatigue(attacker, damage);
+    await attacker.toggleStatusEffect("dazed", { active: true });
+    notes.push(game.i18n.format("l5r5e-combat-helper.kiho.combat.anvilRetaliation", { kiho: anvil.kiho, attacker: attacker.name, damage }));
+  }
+
+  if (def.anvilMark && defended) {
+    await target.unsetFlag("l5r5e-combat-helper", "kihoMark");
+    if (finalDamage === 0) {
+      if (weapon?.id && attacker.items?.get(weapon.id)) await applyDamagedQualityToWeapon(weapon, attacker);
+      await attacker.toggleStatusEffect("burning", { active: true });
+      notes.push(game.i18n.format("l5r5e-combat-helper.kiho.combat.anvilBurst", { attacker: attacker.name }));
+    }
+  }
+
+  if (def.proneSource && finalDamage > 0 && atk.damageType === "physical") {
+    await attacker.toggleStatusEffect("prone", { active: true });
+    notes.push(game.i18n.format("l5r5e-combat-helper.kiho.combat.proneSource", { attacker: attacker.name }));
+  }
+  return notes;
 }
 
 /**

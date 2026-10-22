@@ -216,13 +216,24 @@ export const KIHO_REGISTRY = [
     ],
   },
   {
-    // Libro Básico p. 184. Enhancement and burst in ticket K2.
+    // Libro Básico p. 184. Enhancement: −2 damage per opportunity of the attack (kiho-enhancements.ts).
     names: ["Way of the Willow", "La senda del sauce"],
     compendiumIds: ["Compendium.l5r5e.core-techniques-kiho.Item.L5RCoreKih000007"],
     activation: { skill: "meditation", ring: "air", difficulty: 3 },
     enhancement: { id: "willow", note: "l5r5e-combat-helper.kiho.enhancement.willow" },
-    burst: [],
-    cardNote: "l5r5e-combat-helper.kiho.note.burstK2",
+    burst: [
+      {
+        threshold: 2,
+        effects: [
+          {
+            type: "incoming_attack_tn",
+            target: "attacker",
+            amount: { source: "attacker_skill_rank", skill: "meditation" },
+            duration: "until_next_turn",
+          },
+        ],
+      },
+    ],
   },
   {
     // Libro Básico p. 185. "Each other character at range 0-1" are the targeted tokens.
@@ -251,13 +262,13 @@ export const KIHO_REGISTRY = [
     cardNote: "l5r5e-combat-helper.kiho.note.channelFireDragon",
   },
   {
-    // Libro Básico p. 185. Enhancement and burst in ticket K2.
+    // Libro Básico p. 185. Enhancement: retaliation when defending (kiho-enhancements.ts).
+    // Burst: marks the chosen target; its next attack is reduced by Fire Ring.
     names: ["The Body Is an Anvil", "El cuerpo es un yunque"],
     compendiumIds: ["Compendium.l5r5e.core-techniques-kiho.Item.L5RCoreKih000013"],
     activation: { skill: "meditation", ring: "fire", difficulty: 3 },
     enhancement: { id: "bodyAnvil", note: "l5r5e-combat-helper.kiho.enhancement.bodyAnvil" },
-    burst: [],
-    cardNote: "l5r5e-combat-helper.kiho.note.burstK2",
+    burst: [{ threshold: 2, effects: [{ type: "mark_target", target: "first_target", key: "anvil" }] }],
   },
   {
     // Libro Básico p. 185. The burst targets an object: manual.
@@ -327,13 +338,20 @@ export const KIHO_REGISTRY = [
     ],
   },
   {
-    // Libro Básico p. 186. Enhancement and burst in ticket K2.
+    // Libro Básico p. 186. Enhancement: −Earth Ring critical severity (critical-mitigation.ts);
+    // the Void spend against the attacker is ticket K3.
     names: ["Grasp the Earth Dragon", "El abrazo del dragón de Tierra"],
     compendiumIds: ["Compendium.l5r5e.core-techniques-kiho.Item.L5RCoreKih000002"],
     activation: { skill: "meditation", ring: "earth", difficulty: 2 },
     enhancement: { id: "graspEarthDragon", note: "l5r5e-combat-helper.kiho.enhancement.graspEarthDragon" },
-    burst: [],
-    cardNote: "l5r5e-combat-helper.kiho.note.burstK2",
+    burst: [
+      {
+        threshold: 3,
+        effects: [
+          { type: "damage_cap", target: "attacker", cap: 1, proneSource: true, duration: "until_end_of_next_turn" },
+        ],
+      },
+    ],
   },
   {
     // Libro Básico p. 187. "Fatigado" is the system's Exhausted condition.
@@ -559,3 +577,13 @@ export const KIHO_REGISTRY = [
     cardNote: "l5r5e-combat-helper.kiho.note.deathTouch",
   },
 ];
+
+/**
+ * The registry entry of the actor's active kihō, or null. Lives here (not in
+ * kiho-engine.ts) so the combat flow can read it without importing the engine.
+ */
+export function activeKihoOf(actor) {
+  const active = actor?.getFlag?.("l5r5e-combat-helper", "activeKiho");
+  if (!active) return null;
+  return KIHO_REGISTRY.find((k) => k.names.includes(active.name)) ?? null;
+}

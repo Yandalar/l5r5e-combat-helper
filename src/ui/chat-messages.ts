@@ -137,6 +137,7 @@ export async function createDamageMessage(
       ${fireBonusLine}
       ${tnReductionLine}
       ${attackData?.hasAssistance ? `<p>${game.i18n.localize("l5r5e-combat-helper.kata.chat.assistanceActive")}</p>` : ""}
+      ${(attackData?.kihoNotes ?? []).map((n) => `<p class="kiho-note">☯ ${n}</p>`).join("")}
       ${armorInfo}
       <p>${fatigueText}</p>
       ${incapacitatedMessage}
@@ -298,6 +299,7 @@ export async function createCriticalStrikeMessage(target, attacker, weapon, orig
           originRollId,
           mitigationTn,
           ringDifficulty,
+          sharp: Boolean(kata.sharp),
         },
       },
     },

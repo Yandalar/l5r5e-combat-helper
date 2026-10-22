@@ -210,7 +210,7 @@ async function handleShatteringParry(
  * @param {Actor} owner - The actor who owns the weapon (for notifications)
  * @returns {Promise<void>}
  */
-async function applyDamagedQualityToWeapon(weapon, owner) {
+export async function applyDamagedQualityToWeapon(weapon, owner) {
   const currentProperties = weapon.system?.properties || [];
 
   const alreadyDamaged = currentProperties.some(
