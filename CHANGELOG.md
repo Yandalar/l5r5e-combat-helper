@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
     - Death Touch and Grasp the Earth Dragon: the damage card offers the attacked character a button to spend 1 Void point (defend against the damage, or make the attacker suffer fatigue).
     - Freezing the Lifeblood and Breaking Blow: after an unarmed hit, choice cards for the target (Immobilized or 3 fatigue; the attacker picks a weapon or armor, then Damaged or 2 fatigue).
   - The remaining parts of the enhancements are described on the card and applied by hand.
+  - An active kihō shows as a "☯ Kihō: <name>" Active Effect on the token and sheet, with the icon and aura colour of the ring it was activated with (the roll's ring for kihō without a fixed ring); the card says which ring. Deleting the effect ends the kihō.
 - Choice cards: a technique can let the attacker or the target pick an option, and the GM's client applies it.
 
 - **16 more katas from the Core Rulebook**:
