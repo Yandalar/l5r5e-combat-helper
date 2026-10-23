@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- The release bundle (`dist/bundle.js`) is now minified.
+
 ## [1.2.0] - 2026-10-22
 
 ### Added
