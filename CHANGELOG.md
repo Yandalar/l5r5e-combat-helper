@@ -2,37 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.2.0] - 2026-10-22
 
 ### Added
 
-- **Kihō base**:
+- **Kihō** (all 23 Core Rulebook kihō):
   - Kihō rolled from the sheet are detected. A successful roll activates the kihō's enhancement (one per character; another kihō replaces it) and resolves its burst effect by bonus successes.
-  - The card has an "End kihō" button, and combat end clears active kihō.
-  - All 23 Core Rulebook kihō are recognized, show their enhancement on the card and resolve their burst effect: Freezing the Lifeblood, Ride the Water Dragon, Ki Protection, Water Fist, Way of the Seafoam, The Great Silence, Air Fist, Channel the Fire Dragon, Flame Fist, Way of the Falling Star, Cleansing Spirit, Earthen Fist, Way of the Earthquake, Way of the Edgeless Sword, Touch the Void Dragon and Death Touch. The burst of Breaking Blow, Earth Needs No Eyes, Riding the Clouds and Still the Elements is shown as a reminder; Way of the Willow, Grasp the Earth Dragon and The Body Is an Anvil come with the combat enhancements.
+  - The active kihō shows as a "☯ Kihō: <name>" Active Effect on the token and sheet, with the icon and aura colour of the ring it was activated with (the roll's ring for kihō without a fixed ring); the card says which ring.
+  - The enhancement ends with the card's "End kihō" button, another kihō, combat end, or by deleting the "☯ Kihō" effect.
+  - **Burst effects:** Freezing the Lifeblood, Ride the Water Dragon, Ki Protection, Water Fist, Way of the Seafoam, The Great Silence, Air Fist, Channel the Fire Dragon, Flame Fist, Way of the Falling Star, Cleansing Spirit, Earthen Fist, Way of the Earthquake, Way of the Edgeless Sword, Touch the Void Dragon and Death Touch. The burst of Breaking Blow, Earth Needs No Eyes, Riding the Clouds and Still the Elements is shown as a reminder; Way of the Willow, Grasp the Earth Dragon and The Body Is an Anvil come with the combat enhancements.
   - **Enhancements in combat:**
     - The user's unarmed attacks: Earthen Fist, Water Fist, Flame Fist, Way of the Falling Star, Way of the Edgeless Sword and Death Touch.
     - Attacks against the user: Earthen Fist's +1 resistance, Way of the Willow, Grasp the Earth Dragon and The Body Is an Anvil.
     - Earth Needs No Eyes raises Vigilance for the module's TNs.
-    - The bursts of Way of the Willow, Grasp the Earth Dragon and The Body Is an Anvil are applied too.
     - Damage cards list each kihō modifier.
   - **Enhancements with buttons and choices:**
     - Way of the Earthquake and Ki Protection: a "Use enhancement" button on the kihō card acts on the targeted tokens (a Fitness resistance, or spending 1 Void point to remove fatigue).
     - Death Touch and Grasp the Earth Dragon: the damage card offers the attacked character a button to spend 1 Void point (defend against the damage, or make the attacker suffer fatigue).
     - Freezing the Lifeblood and Breaking Blow: after an unarmed hit, choice cards for the target (Immobilized or 3 fatigue; the attacker picks a weapon or armor, then Damaged or 2 fatigue).
   - The remaining parts of the enhancements are described on the card and applied by hand.
-  - An active kihō shows as a "☯ Kihō: <name>" Active Effect on the token and sheet, with the icon and aura colour of the ring it was activated with (the roll's ring for kihō without a fixed ring); the card says which ring. Deleting the effect ends the kihō.
-- Choice cards: a technique can let the attacker or the target pick an option, and the GM's client applies it.
-
-- **16 more katas from the Core Rulebook**:
+- **16 more katas from the Core Rulebook** (22 of 32 automated):
   - Active: Iaijutsu Cut: Crossing Blade, Iaijutsu Cut: Rising Blade, Flowing Water Strike, Crimson Leaves Strike, Heartpiercing Strike and Pin the Fan.
   - Passive (opportunity cards on a matching attack roll): Breath of Wind Style, Crashing Wave Style, Disappearing World Style, Iron in the Mountains Style, Rushing Avalanche Style, Spinning Blades Style, Pelting Hail Style, Open-Hand Style and Veiled Menace Style.
   - Warrior's Resolve: send the technique to chat from the sheet and press "Use" to spend a Void point and remove fatigue (once per combat).
+  - Katas can trigger critical strikes with their own severity and, for Heartpiercing Strike, their own Fitness TN, through the usual critical strike card.
   - Parts a kata can't automate (disarming, readying a sheathed weapon, moving, unchecked weapon properties) are shown as reminders on its card.
-- Resistance rolls with ring-dependent TNs ("TN 3 (Earth 4, Fire 1)"); the TN is computed from the ring the target rolls with.
-- The dice picker the module opens for resistance, critical mitigation and Shattering Parry rolls updates its TN when the ring changes, so the system's success line matches the module.
-- Katas can trigger critical strikes with their own severity and, for Heartpiercing Strike, their own Fitness TN, through the usual critical strike card.
-- Opportunity result cards list what each effect did.
+- **Ring-dependent TNs** ("TN 3 (Earth 4, Fire 1)"):
+  - Resistance rolls compute the TN from the ring the target rolls with.
+  - The dice picker the module opens for resistance, critical mitigation and Shattering Parry rolls updates its TN when the ring changes, so the system's success line matches the module.
+- **Chat cards:**
+  - Choice cards: a technique can let the attacker or the target pick an option, and the GM's client applies it.
+  - Opportunity result cards list what each effect did.
 
 ### Changed
 
@@ -42,6 +42,11 @@ All notable changes to this project will be documented in this file.
 
 - Unarmed attacks dealt the equipped weapon's damage (e.g. a katana). They now use the roll's or an equipped unarmed weapon, or the punch profile (damage 1, deadliness 2).
 - Critical strikes, mitigation, Shattering Parry, Void defense, opportunity criticals, difficulty changes and target reassignment now follow unlinked tokens instead of the sidebar actor that shares their id.
+
+### Internal
+
+- Contract test against the installed l5r5e system's `DicePickerDialog` (`tests/registry/system-contract.test.ts`), skipped when the system is not installed.
+- Integrity tests validate every kata and kihō registry entry.
 
 ## [1.1.0] - 2026-10-21
 

@@ -17,7 +17,10 @@ An automation module for Foundry VTT that streamlines combat for the Legend of t
 - **Shattering Parry** — After rolling Fitness, characters may reroll all mitigation dice at the cost of their weapon gaining the Damaged quality
 - **Attitude Effects** — Automatically applies the mechanical effects of Air, Fire, and Earth stances: Air increases incoming attack TN, Fire adds strife symbols as bonus damage, Earth blocks opportunity-based critical strikes
 - **Katas** — Detects kata rolls from the character sheet and applies their effects to the targets: conditions, damage, critical strikes, forced stances, resistance rolls (with ring-dependent TNs), timed buffs and debuffs that expire with the turn order. Covers every Core Rulebook kata the module can resolve (22 of 32) plus Bear's Swipe Style; manual parts are shown as reminders on the card
-- **Player-friendly kata cards** — Players spend their own kata opportunities from the chat; the GM's client applies the effect
+- **Kihō** — Covers all 23 Core Rulebook kihō: a successful roll activates the enhancement (one per character, shown as a "☯ Kihō" Active Effect with its ring's icon and aura) and resolves the burst effect by bonus successes. Enhancements modify unarmed attacks and attacks against the user, and add reaction buttons and choice cards where the rules need a decision
+- **Unarmed attacks** — Punches use the roll's or an equipped unarmed weapon, or the punch profile (damage 1, deadliness 2), never the equipped katana
+- **Ring-dependent TNs** — Resistance and mitigation rolls with TNs like "TN 3 (Earth 4, Fire 1)" are resolved with the ring rolled, and the dice picker the module opens updates its TN when the ring changes
+- **Player-friendly technique cards** — Players spend their own kata opportunities, use kihō reactions and pick choice-card options from the chat; the GM's client applies the effect
 - **GM Target Assignment** — Assign or reassign the target of any attack roll after the fact, reverting and reapplying damage automatically
 - **GM Difficulty Change** — Retroactively change the TN of any roll; all downstream effects are reverted and recalculated
 
@@ -50,8 +53,8 @@ After updating to a new version, restart the world (return to setup and launch i
 ## Requirements
 
 - **Foundry VTT**: v11–v14
-- **Game System**: Legend of the Five Rings 5th Edition (`l5r5e`)
-- **Permissions**: a GM must be connected for the automation to run (damage, kata effects, players' opportunity spends)
+- **Game System**: Legend of the Five Rings 5th Edition (`l5r5e`) 1.13.3 or later
+- **Permissions**: a GM must be connected for the automation to run (damage, kata and kihō effects, players' button clicks)
 
 ## Support
 

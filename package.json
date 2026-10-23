@@ -1,6 +1,6 @@
 {
   "name": "l5r5e-combat-helper",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "concurrently \"vite build --watch\" \"browser-sync start --proxy localhost:30000 --files 'dist/bundle.js' --no-open --no-ghost-mode --ws\"",
