@@ -1,7 +1,8 @@
 import { defineConfig } from "vite";
 
-// `vite build --mode release` (npm run build:release): no source map in the
-// published ZIP. Dev builds keep it for debugging in the browser.
+// `vite build --mode release` (npm run build:release): minified, no source map
+// in the published ZIP. Dev builds keep both readable code and the map for
+// debugging in the browser.
 export default defineConfig(({ mode }) => ({
   build: {
     lib: {
@@ -12,6 +13,6 @@ export default defineConfig(({ mode }) => ({
     },
     outDir: "dist",
     sourcemap: mode !== "release",
-    minify: false,
+    minify: mode === "release" ? "esbuild" : false,
   },
 }));
